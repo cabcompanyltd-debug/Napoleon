@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, LogIn, User, CheckCircle2, Shield, Sprout, ShieldAlert, UserCheck, LayoutDashboard } from 'lucide-react';
 import { signInWithGoogle, logoutUser, saveUserProfileWithRole, getUserRole } from '../../lib/firebase';
 import { User as FirebaseUser } from 'firebase/auth';
+import logoImg from '../../assets/logo.png';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -93,8 +94,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
 
           {/* Header */}
           <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1E5E3A] to-[#0B2E1D] border border-[#A3E635]/50 flex items-center justify-center text-[#A3E635] mb-3 shadow-lg overflow-hidden p-1.5">
-              <img src="/logo.png" alt="Napoleon Steadings" className="w-full h-full object-contain" />
+            <div className="bg-white px-4 py-2 rounded-xl shadow-md border border-white/30 mb-3 inline-flex items-center justify-center">
+              <img src={logoImg} alt="Napoleon Steadings" className="h-10 w-auto object-contain" />
             </div>
 
             <h3 className="font-editorial text-2xl font-bold text-white">

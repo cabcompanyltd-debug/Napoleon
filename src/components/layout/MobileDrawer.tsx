@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, ArrowRight, Sprout, User, Search, MapPin, Phone } from 'lucide-react';
 import { COMPANY_INFO } from '../../data/companyData';
+import logoImg from '../../assets/logo.png';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -129,15 +130,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
         >
           {/* Drawer Header */}
           <div className="p-5 border-b border-[#1E5E3A]/40 flex items-center justify-between bg-[#062114] sticky top-0 z-20">
-            <div className="flex items-center gap-2">
+            <div className="bg-white px-3 py-1.5 rounded-xl shadow-md border border-white/30 flex items-center justify-center">
               <img
-                src="/logo.png"
+                src={logoImg}
                 alt="Napoleon Steadings"
-                className="w-7 h-7 object-contain rounded-lg"
+                className="h-7 w-auto object-contain"
               />
-              <span className="font-editorial text-lg font-bold text-white tracking-wide">
-                NAPOLEON STEADINGS
-              </span>
             </div>
             <button
               onClick={onClose}

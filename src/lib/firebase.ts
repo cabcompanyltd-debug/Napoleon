@@ -11,6 +11,7 @@ import {
 import { 
   getFirestore, 
   initializeFirestore,
+  setLogLevel,
   collection, 
   addDoc, 
   doc, 
@@ -35,10 +36,13 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-// Initialize Firestore with long polling fallback for iframe/sandbox environments
+// Silence internal SDK warnings in sandboxed preview environments
+setLogLevel('error');
+
+// Initialize Firestore with long polling for iframe/sandbox environments to prevent WebSocket timeouts
 export const db = firebaseConfigJson.firestoreDatabaseId 
-  ? initializeFirestore(app, { experimentalAutoDetectLongPolling: true }, firebaseConfigJson.firestoreDatabaseId)
-  : initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+  ? initializeFirestore(app, { experimentalForceLongPolling: true }, firebaseConfigJson.firestoreDatabaseId)
+  : initializeFirestore(app, { experimentalForceLongPolling: true });
 
 export enum OperationType {
   CREATE = 'create',
@@ -242,8 +246,12 @@ export const getUserRole = async (uid: string): Promise<'admin' | 'user'> => {
     if (docSnap.exists()) {
       return docSnap.data().role || 'user';
     }
-  } catch (error) {
-    console.error("Error getting user role:", error);
+  } catch (error: any) {
+    if (error?.code === 'unavailable' || error?.message?.includes('offline') || error?.message?.includes('client is offline')) {
+      console.warn("Client offline or backend temporarily unreachable. Defaulting user role to 'user'.");
+    } else {
+      console.error("Error getting user role:", error);
+    }
   }
   return 'user';
 };

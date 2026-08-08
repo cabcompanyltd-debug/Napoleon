@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sprout, Search, User, Menu, ChevronDown, Phone, ShieldCheck, PenTool, LayoutDashboard } from 'lucide-react';
 import { MegaMenu } from './MegaMenu';
 import { User as FirebaseUser } from 'firebase/auth';
+import logoImg from '../../assets/logo.png';
 
 interface HeaderProps {
   currentRoute: string;
@@ -63,22 +64,15 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Logo */}
         <button
           onClick={() => onNavigate('/')}
-          className="flex items-center gap-3 group text-left focus:outline-none"
+          className="flex items-center group text-left focus:outline-none"
+          aria-label="Napoleon Steadings - Home"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1E5E3A] to-[#0B2E1D] border border-[#A3E635]/50 flex items-center justify-center text-[#A3E635] shadow-xl group-hover:scale-105 group-hover:border-[#A3E635] transition-all overflow-hidden p-1">
+          <div className="bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg border border-white/30 flex items-center justify-center transition-transform group-hover:scale-105">
             <img
-              src="/logo.png"
+              src={logoImg}
               alt="Napoleon Steadings"
-              className="w-full h-full object-contain"
+              className="h-8 sm:h-10 w-auto object-contain"
             />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-editorial text-lg sm:text-xl font-extrabold tracking-tight text-white leading-none uppercase group-hover:text-[#A3E635] transition-colors">
-              Napoleon Steadings
-            </span>
-            <span className="text-[9px] uppercase tracking-[0.25em] text-[#A3E635] font-bold mt-0.5">
-              Volta Region • Ghana
-            </span>
           </div>
         </button>
 
