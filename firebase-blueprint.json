@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User profiles authenticated via Google Sign-In or Firebase Auth",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "blog_posts": {
+      "title": "Blog Posts & Articles",
+      "description": "Articles published by logged-in users and corporate authors",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "summary": { "type": "string" },
+        "content": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "authorUid": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "category": { "type": "string" },
+        "isPublished": { "type": "boolean" },
+        "readTime": { "type": "string" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "likesCount": { "type": "number" }
+      },
+      "required": ["title", "slug", "content", "authorUid"]
+    },
+    "contact_inquiries": {
+      "title": "Contact Inquiries",
+      "description": "Submissions from the corporate contact form",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "organization": { "type": "string" },
+        "inquiryType": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["fullName", "email", "inquiryType", "message"]
+    },
+    "newsletter_subscriptions": {
+      "title": "Newsletter Subscriptions",
+      "description": "Email list for company updates and agricultural insights",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "subscribedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email"]
+    },
+    "partner_inquiries": {
+      "title": "Partner and Investment Inquiries",
+      "description": "Commercial and investment inquiry records",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "organization": { "type": "string" },
+        "partnerCategory": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fullName", "email", "partnerCategory"]
+    }
+  },
+  "firestore": {
+    "/blog_posts/{postId}": {
+      "schema": "blog_posts",
+      "description": "Community and user published blog posts"
+    }
+  }
+}
