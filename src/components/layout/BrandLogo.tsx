@@ -4,7 +4,7 @@ export const NEW_LOGO_URL = 'https://82qu5ey7.us-east.insforge.app/788db57f-1cc3
 export const NEW_FAVICON_URL = 'https://82qu5ey7.us-east.insforge.app/52bdc0b2-33f7-42d3-a870-868ed6e6ff62';
 
 interface BrandLogoProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   showTagline?: boolean;
   className?: string;
   onClick?: () => void;
@@ -18,9 +18,10 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   const [imgSrc, setImgSrc] = useState<string>(NEW_LOGO_URL);
 
   const heightClasses = {
-    sm: 'h-8 sm:h-9',
-    md: 'h-10 sm:h-12 md:h-14',
-    lg: 'h-14 sm:h-16 md:h-20'
+    sm: 'h-8 sm:h-10',
+    md: 'h-12 sm:h-14 md:h-16',
+    lg: 'h-14 sm:h-16 md:h-20',
+    xl: 'h-20 sm:h-24 md:h-28'
   };
 
   const handleClick = (e: React.MouseEvent) => {

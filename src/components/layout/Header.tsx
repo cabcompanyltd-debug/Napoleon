@@ -48,10 +48,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-slanted-dual backdrop-blur-xl border-b ${
         isScrolled
-          ? 'bg-[#061A10]/95 backdrop-blur-xl border-b border-[#A3E635]/30 py-2.5 shadow-2xl'
-          : 'bg-slanted-dual backdrop-blur-md py-3.5 border-b border-[#1E5E3A]/40'
+          ? 'py-2 sm:py-2.5 shadow-2xl border-[#A3E635]/50'
+          : 'py-3 sm:py-4 border-[#1E5E3A]/50'
       }`}
     >
       {/* Decorative Seam Highlight Line */}
@@ -70,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex items-center group text-left focus:outline-none shrink-0"
           aria-label="Napoleon Steadings - Home (Click to reload)"
         >
-          <BrandLogo size="md" />
+          <BrandLogo size="lg" className="scale-105 sm:scale-110" />
         </button>
 
         {/* Desktop Nav Items - Clean & Spacious Submenus */}
