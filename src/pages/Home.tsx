@@ -57,9 +57,9 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="w-full space-y-0 bg-[#061A10] text-white pt-20 sm:pt-24 lg:pt-24">
+    <div className="w-full space-y-0 bg-[#061A10] text-white pt-24 sm:pt-28 lg:pt-32">
       {/* ANIMATED HORIZONTAL NEWS TICKER */}
-      <div className="relative z-30 w-full">
+      <div className="relative z-30 w-full mb-3">
         <NewsTicker onNavigate={onNavigate} />
       </div>
 

@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import logoImg from '../../assets/logo.png';
 
-export const NEW_LOGO_URL = 'https://82qu5ey7.us-east.insforge.app/788db57f-1cc3-4575-a74f-fc44c1a2ec6d';
-export const NEW_FAVICON_URL = 'https://82qu5ey7.us-east.insforge.app/52bdc0b2-33f7-42d3-a870-868ed6e6ff62';
+export const DRIVE_FILE_ID = '1LiGSBoFUf9wX4yZ6FAjlQT-Y8UXiu5y6';
+export const GOOGLE_DRIVE_LOGO_URL = `https://drive.google.com/uc?export=view&id=${DRIVE_FILE_ID}`;
+export const GOOGLE_DRIVE_LH3_URL = `https://lh3.googleusercontent.com/d/${DRIVE_FILE_ID}`;
+
+export const LOGO_URL = GOOGLE_DRIVE_LOGO_URL;
+export const FAVICON_URL = GOOGLE_DRIVE_LH3_URL;
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -16,7 +19,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   className = '',
   onClick
 }) => {
-  const [imgSrc, setImgSrc] = useState<string>(logoImg);
+  const [imgSrc, setImgSrc] = useState<string>(GOOGLE_DRIVE_LOGO_URL);
 
   const heightClasses = {
     sm: 'h-8 sm:h-10',
@@ -46,11 +49,16 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     >
       <img
         src={imgSrc}
-        onError={() => setImgSrc('/logo.png')}
+        onError={() => {
+          if (imgSrc !== GOOGLE_DRIVE_LH3_URL) {
+            setImgSrc(GOOGLE_DRIVE_LH3_URL);
+          }
+        }}
         alt="Napoleon Steadings Ltd."
-        className={`${heightClasses[size]} w-auto object-contain drop-shadow-md`}
+        className={`${heightClasses[size]} w-auto object-contain drop-shadow-md rounded-md`}
         referrerPolicy="no-referrer"
       />
     </div>
   );
 };
+
