@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export const DRIVE_FILE_ID = '1LiGSBoFUf9wX4yZ6FAjlQT-Y8UXiu5y6';
+export const DRIVE_FILE_ID = '1lZWOujri5qIT5UPkCdmitM0SXfve9DQ1';
 export const GOOGLE_DRIVE_LOGO_URL = `https://drive.google.com/uc?export=view&id=${DRIVE_FILE_ID}`;
 export const GOOGLE_DRIVE_LH3_URL = `https://lh3.googleusercontent.com/d/${DRIVE_FILE_ID}`;
 

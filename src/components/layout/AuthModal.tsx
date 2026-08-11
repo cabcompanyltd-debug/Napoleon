@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, UserCheck, ShieldAlert, LayoutDashboard, Shield, LogIn, Sparkles, LogOut, Lock, Mail, User as UserIcon } from 'lucide-react';
-import { UserProfile, mockLoginAsAdmin, mockLoginAsUser, logoutUser, setStoredAuthUser } from '../../lib/insforge';
+import { X, UserCheck, ShieldAlert, LayoutDashboard, Shield, LogIn, Sparkles, LogOut, Lock, Mail, User as UserIcon, CheckCircle2, AlertCircle } from 'lucide-react';
+import { UserProfile, mockLoginAsAdmin, mockLoginAsUser, logoutUser, signInWithInsForge, signUpWithInsForge } from '../../lib/insforge';
 import { BrandLogo } from './BrandLogo';
 
 interface AuthModalProps {
@@ -12,17 +12,20 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUser, onNavigate }) => {
-  const [authMode, setAuthMode] = useState<'quick' | 'form'>('quick');
+  const [isSignUp, setIsSignUp] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'admin' | 'user'>('admin');
   const [emailInput, setEmailInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleQuickAdminLogin = () => {
     setIsLoading(true);
+    setAuthError(null);
     setTimeout(() => {
       const admin = mockLoginAsAdmin();
       setIsLoading(false);
@@ -35,6 +38,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
 
   const handleQuickUserLogin = () => {
     setIsLoading(true);
+    setAuthError(null);
     setTimeout(() => {
       mockLoginAsUser();
       setIsLoading(false);
@@ -45,28 +49,56 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
     }, 300);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailInput) return;
+    if (!emailInput || !passwordInput) {
+      setAuthError('Please enter email and password.');
+      return;
+    }
 
     setIsLoading(true);
-    setTimeout(() => {
-      const user: UserProfile = {
-        id: `${selectedRole}-${Date.now()}`,
-        email: emailInput.trim(),
-        fullName: nameInput.trim() || (selectedRole === 'admin' ? 'System Administrator' : 'Steadings Member'),
-        role: selectedRole,
-        createdAt: new Date().toISOString(),
-      };
-      setStoredAuthUser(user);
-      setIsLoading(false);
-      onClose();
-      if (selectedRole === 'admin' && onNavigate) {
-        onNavigate('/dashboard');
-      } else if (onNavigate) {
-        onNavigate('/');
+    setAuthError(null);
+    setAuthSuccess(null);
+
+    try {
+      if (isSignUp) {
+        const res = await signUpWithInsForge(emailInput, passwordInput, nameInput, selectedRole);
+        if (res.error) {
+          setAuthError(res.error);
+        } else {
+          setAuthSuccess(res.message || 'Account created successfully!');
+          setTimeout(() => {
+            setIsLoading(false);
+            onClose();
+            if (res.user?.role === 'admin' && onNavigate) {
+              onNavigate('/dashboard');
+            } else if (onNavigate) {
+              onNavigate('/');
+            }
+          }, 600);
+        }
+      } else {
+        const res = await signInWithInsForge(emailInput, passwordInput, selectedRole);
+        if (res.error) {
+          setAuthError(res.error);
+        } else {
+          setAuthSuccess('Signed in successfully!');
+          setTimeout(() => {
+            setIsLoading(false);
+            onClose();
+            if (res.user?.role === 'admin' && onNavigate) {
+              onNavigate('/dashboard');
+            } else if (onNavigate) {
+              onNavigate('/');
+            }
+          }, 600);
+        }
       }
-    }, 300);
+    } catch (err: any) {
+      setAuthError(err.message || 'Authentication error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignOut = () => {
@@ -101,12 +133,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
             </div>
 
             <h3 className="font-editorial text-2xl font-bold text-white">
-              {currentUser ? 'Napoleon Steadings Account' : 'InsForge Sign In & Portal'}
+              {currentUser ? 'Napoleon Steadings Account' : isSignUp ? 'Create InsForge Account' : 'InsForge Sign In & Portal'}
             </h3>
             <p className="text-xs text-emerald-200/80 mt-1 max-w-xs">
               {currentUser
                 ? `Logged in as ${currentUser.fullName} (${currentUser.role.toUpperCase()})`
-                : 'Access the admin dashboard, create posts & manage agricultural inquiries.'}
+                : 'Access the executive dashboard, publish articles & manage agricultural inquiries.'}
             </p>
           </div>
 
@@ -137,7 +169,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
                     className="w-full py-3.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl transition-all"
                   >
                     <LayoutDashboard className="w-4 h-4" />
-                    <span>Go to Admin Dashboard</span>
+                    <span>Go to Executive Dashboard</span>
                   </button>
                 )}
 
@@ -152,9 +184,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
             </div>
           ) : (
             /* Sign In Options */
-            <div className="mt-6 space-y-5">
+            <div className="mt-6 space-y-4">
               {/* Quick One-Click Login Options */}
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-emerald-200/80 block text-center">
                   ⚡ Fast One-Click Access
                 </label>
@@ -164,43 +196,80 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
                     type="button"
                     onClick={handleQuickAdminLogin}
                     disabled={isLoading}
-                    className="p-3.5 rounded-2xl bg-gradient-to-br from-[#A3E635] to-[#84CC16] hover:from-[#84CC16] hover:to-[#65A30D] text-[#0B2B1B] font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 shadow-lg border border-white/40 transition-all hover:scale-[1.02]"
+                    className="p-3 rounded-2xl bg-gradient-to-br from-[#A3E635] to-[#84CC16] hover:from-[#84CC16] hover:to-[#65A30D] text-[#0B2B1B] font-extrabold text-xs flex flex-col items-center justify-center gap-1 shadow-lg border border-white/40 transition-all hover:scale-[1.02]"
                   >
-                    <ShieldAlert className="w-5 h-5 text-[#0B2B1B]" />
+                    <ShieldAlert className="w-4 h-4 text-[#0B2B1B]" />
                     <span className="text-xs">Login as Admin</span>
-                    <span className="text-[9px] opacity-80 font-mono">Full Controls & Redirection</span>
+                    <span className="text-[9px] opacity-80 font-mono">Full Executive Access</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleQuickUserLogin}
                     disabled={isLoading}
-                    className="p-3.5 rounded-2xl bg-[#1E5E3A] hover:bg-[#184B2E] text-white font-extrabold text-xs flex flex-col items-center justify-center gap-1.5 shadow-lg border border-[#A3E635]/40 transition-all hover:scale-[1.02]"
+                    className="p-3 rounded-2xl bg-[#1E5E3A] hover:bg-[#184B2E] text-white font-extrabold text-xs flex flex-col items-center justify-center gap-1 shadow-lg border border-[#A3E635]/40 transition-all hover:scale-[1.02]"
                   >
-                    <UserCheck className="w-5 h-5 text-[#A3E635]" />
+                    <UserCheck className="w-4 h-4 text-[#A3E635]" />
                     <span className="text-xs">Login as Member</span>
-                    <span className="text-[9px] text-emerald-200/80 font-mono">Standard Access</span>
+                    <span className="text-[9px] text-emerald-200/80 font-mono">Standard Member</span>
                   </button>
                 </div>
               </div>
 
-              <div className="relative flex items-center justify-center my-2">
+              <div className="relative flex items-center justify-center my-3">
                 <div className="border-t border-[#1E5E3A] w-full"></div>
                 <span className="bg-[#091D12] px-3 text-[10px] uppercase font-bold text-emerald-300/60 tracking-wider absolute">
-                  or custom sign in
+                  or email & password
                 </span>
               </div>
 
+              {authError && (
+                <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              {authSuccess && (
+                <div className="p-3 rounded-xl bg-[#A3E635]/20 border border-[#A3E635]/50 text-[#A3E635] text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>{authSuccess}</span>
+                </div>
+              )}
+
               {/* Form Mode */}
               <form onSubmit={handleFormSubmit} className="space-y-3">
-                {/* Role Switch */}
+                {/* Role & Mode Switch */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="grid grid-cols-2 gap-1 bg-black/40 p-1 rounded-xl border border-[#1E5E3A] w-full">
+                    <button
+                      type="button"
+                      onClick={() => setIsSignUp(false)}
+                      className={`py-1 px-3 rounded-lg text-xs font-bold transition-all ${
+                        !isSignUp ? 'bg-[#A3E635] text-[#0B2B1B]' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsSignUp(true)}
+                      className={`py-1 px-3 rounded-lg text-xs font-bold transition-all ${
+                        isSignUp ? 'bg-[#A3E635] text-[#0B2B1B]' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Register
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-2 bg-black/40 p-1 rounded-xl border border-[#1E5E3A]">
                   <button
                     type="button"
                     onClick={() => setSelectedRole('admin')}
-                    className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    className={`py-1 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       selectedRole === 'admin'
-                        ? 'bg-[#A3E635] text-[#0B2B1B] shadow'
+                        ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/30'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -210,16 +279,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
                   <button
                     type="button"
                     onClick={() => setSelectedRole('user')}
-                    className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    className={`py-1 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       selectedRole === 'user'
-                        ? 'bg-[#1E5E3A] text-[#A3E635] shadow'
+                        ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/30'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     <UserIcon className="w-3.5 h-3.5" />
-                    <span>User</span>
+                    <span>Member</span>
                   </button>
                 </div>
+
+                {isSignUp && (
+                  <div>
+                    <div className="relative">
+                      <UserIcon className="w-4 h-4 text-emerald-400 absolute left-3 top-3" />
+                      <input
+                        type="text"
+                        placeholder="Full Name"
+                        required={isSignUp}
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value)}
+                        className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div className="relative">
@@ -237,12 +322,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
 
                 <div>
                   <div className="relative">
-                    <UserIcon className="w-4 h-4 text-emerald-400 absolute left-3 top-3" />
+                    <Lock className="w-4 h-4 text-emerald-400 absolute left-3 top-3" />
                     <input
-                      type="text"
-                      placeholder="Full Name (optional)"
-                      value={nameInput}
-                      onChange={(e) => setNameInput(e.target.value)}
+                      type="password"
+                      required
+                      placeholder="Password"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
                       className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
                     />
                   </div>
@@ -251,15 +337,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-colors"
+                  className="w-full py-3 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>{isLoading ? 'Signing In...' : `Sign In & Redirect`}</span>
+                  <span>{isLoading ? 'Processing...' : isSignUp ? 'Create InsForge Account' : 'Sign In via InsForge'}</span>
                 </button>
               </form>
 
-              <div className="p-3 rounded-xl bg-black/40 border border-[#1E5E3A] text-[10px] text-emerald-100/80 leading-relaxed text-center">
-                <span className="font-bold text-[#A3E635]">InsForge Backend Integration:</span> Admin users are automatically routed to the management dashboard.
+              <div className="p-2.5 rounded-xl bg-black/40 border border-[#1E5E3A] text-[10px] text-emerald-100/80 leading-relaxed text-center">
+                <span className="font-bold text-[#A3E635]">InsForge BaaS Integration:</span> Connected to Postgres backend (`https://82qu5ey7.us-east.insforge.app`).
               </div>
             </div>
           )}
@@ -268,3 +354,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
     </AnimatePresence>
   );
 };
+
