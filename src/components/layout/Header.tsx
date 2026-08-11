@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Sprout, Search, User, Menu, ChevronDown, Phone, ShieldCheck, PenTool, LayoutDashboard } from 'lucide-react';
+import { Search, User, Menu, ChevronDown, Phone, ShieldCheck, PenTool, FolderKanban, BookOpen, Briefcase, Camera } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { MegaMenu } from './MegaMenu';
 import { UserProfile } from '../../lib/insforge';
 import logoImg from '../../assets/logo.png';
@@ -22,7 +23,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeMegaMenu, setActiveMegaMenu] = useState<'agriculture' | 'operations' | 'products' | 'technology' | null>(null);
+  const [activeMegaMenu, setActiveMegaMenu] = useState<'agriculture' | 'operations' | 'products' | null>(null);
+  const [isMediaDropdownOpen, setIsMediaDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,16 +39,11 @@ export const Header: React.FC<HeaderProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navItems = [
-    { name: 'Home', route: '/' },
-    { name: 'About', route: '/about' },
-    { name: 'Agriculture', route: '/agriculture', hasMega: true, megaKey: 'agriculture' as const },
-    { name: 'Operations', route: '/operations', hasMega: true, megaKey: 'operations' as const },
-    { name: 'Products', route: '/products', hasMega: true, megaKey: 'products' as const },
-    { name: 'Technology', route: '/technology', hasMega: true, megaKey: 'technology' as const },
-    { name: 'Projects', route: '/projects' },
-    { name: 'Insights', route: '/insights' },
-    { name: 'Dashboard', route: '/dashboard' }
+  const mediaSublinks = [
+    { name: 'Commercial Projects', route: '/projects', desc: 'Silos, cold storage & solar irrigation', icon: FolderKanban },
+    { name: 'News & Insights', route: '/insights', desc: 'Industry analysis & operational updates', icon: BookOpen },
+    { name: 'Careers & Team', route: '/careers', desc: 'Join agricultural leaders in Ghana', icon: Briefcase },
+    { name: 'Photo & Video Gallery', route: '/gallery', desc: 'High-res visuals from Volta farms', icon: Camera }
   ];
 
   return (
@@ -57,14 +54,14 @@ export const Header: React.FC<HeaderProps> = ({
           : 'bg-slanted-dual backdrop-blur-md py-3.5 border-b border-[#1E5E3A]/40'
       }`}
     >
-      {/* Decorative Diagonal Seam Highlight Line */}
+      {/* Decorative Seam Highlight Line */}
       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#1E5E3A] via-[#A3E635] to-[#1E5E3A] opacity-70" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Logo */}
         <button
           onClick={() => onNavigate('/')}
-          className="flex items-center group text-left focus:outline-none"
+          className="flex items-center group text-left focus:outline-none shrink-0"
           aria-label="Napoleon Steadings - Home"
         >
           <div className="flex items-center justify-center transition-transform group-hover:scale-105 py-1">
@@ -76,39 +73,196 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </button>
 
-        {/* Desktop Nav Items */}
+        {/* Desktop Nav Items - Clean & Spacious Submenus */}
         <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
-          {navItems.map((item) => {
-            const isActive = currentRoute === item.route;
-            return (
-              <div
-                key={item.name}
-                className="relative"
-                onMouseEnter={() => {
-                  if (item.hasMega && item.megaKey) setActiveMegaMenu(item.megaKey);
-                }}
-              >
-                <button
-                  onClick={() => {
-                    onNavigate(item.route);
-                    setActiveMegaMenu(null);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-200 flex items-center gap-1 relative ${
-                    isActive
-                      ? 'text-[#A3E635] bg-[#1E5E3A]/80 border border-[#A3E635]/40 shadow-inner'
-                      : 'text-white/90 hover:text-[#A3E635] hover:bg-white/10'
-                  }`}
-                >
-                  <span>{item.name}</span>
-                  {item.hasMega && <ChevronDown className="w-3 h-3 text-[#A3E635]/80" />}
+          {/* Home */}
+          <button
+            onClick={() => {
+              onNavigate('/');
+              setActiveMegaMenu(null);
+              setIsMediaDropdownOpen(false);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-200 ${
+              currentRoute === '/'
+                ? 'text-[#A3E635] bg-[#1E5E3A]/80 border border-[#A3E635]/40 shadow-inner'
+                : 'text-white/90 hover:text-[#A3E635] hover:bg-white/10'
+            }`}
+          >
+            Home
+          </button>
 
-                  {isActive && (
-                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-1 rounded-full bg-[#A3E635] shadow-[0_0_8px_#A3E635]" />
-                  )}
-                </button>
-              </div>
-            );
-          })}
+          {/* About */}
+          <button
+            onClick={() => {
+              onNavigate('/about');
+              setActiveMegaMenu(null);
+              setIsMediaDropdownOpen(false);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-200 ${
+              currentRoute === '/about'
+                ? 'text-[#A3E635] bg-[#1E5E3A]/80 border border-[#A3E635]/40 shadow-inner'
+                : 'text-white/90 hover:text-[#A3E635] hover:bg-white/10'
+            }`}
+          >
+            About
+          </button>
+
+          {/* Agriculture (Mega Menu) */}
+          <div
+            className="relative"
+            onMouseEnter={() => {
+              setActiveMegaMenu('agriculture');
+              setIsMediaDropdownOpen(false);
+            }}
+          >
+            <button
+              onClick={() => {
+                onNavigate('/agriculture');
+                setActiveMegaMenu(null);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-200 flex items-center gap-1 ${
+                currentRoute.startsWith('/agriculture')
+                  ? 'text-[#A3E635] bg-[#1E5E3A]/80 border border-[#A3E635]/40 shadow-inner'
+                  : 'text-white/90 hover:text-[#A3E635] hover:bg-white/10'
+              }`}
+            >
+              <span>Agriculture</span>
+              <ChevronDown className="w-3 h-3 text-[#A3E635]/80" />
+            </button>
+          </div>
+
+          {/* Operations & Tech (Mega Menu) */}
+          <div
+            className="relative"
+            onMouseEnter={() => {
+              setActiveMegaMenu('operations');
+              setIsMediaDropdownOpen(false);
+            }}
+          >
+            <button
+              onClick={() => {
+                onNavigate('/operations');
+                setActiveMegaMenu(null);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-200 flex items-center gap-1 ${
+                currentRoute.startsWith('/operations') || currentRoute === '/technology'
+                  ? 'text-[#A3E635] bg-[#1E5E3A]/80 border border-[#A3E635]/40 shadow-inner'
+                  : 'text-white/90 hover:text-[#A3E635] hover:bg-white/10'
+              }`}
+            >
+              <span>Operations & Tech</span>
+              <ChevronDown className="w-3 h-3 text-[#A3E635]/80" />
+            </button>
+          </div>
+
+          {/* Products (Mega Menu) */}
+          <div
+            className="relative"
+            onMouseEnter={() => {
+              setActiveMegaMenu('products');
+              setIsMediaDropdownOpen(false);
+            }}
+          >
+            <button
+              onClick={() => {
+                onNavigate('/products');
+                setActiveMegaMenu(null);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-200 flex items-center gap-1 ${
+                currentRoute.startsWith('/products')
+                  ? 'text-[#A3E635] bg-[#1E5E3A]/80 border border-[#A3E635]/40 shadow-inner'
+                  : 'text-white/90 hover:text-[#A3E635] hover:bg-white/10'
+              }`}
+            >
+              <span>Products</span>
+              <ChevronDown className="w-3 h-3 text-[#A3E635]/80" />
+            </button>
+          </div>
+
+          {/* Media & Projects (Submenu Dropdown) */}
+          <div
+            className="relative"
+            onMouseEnter={() => {
+              setIsMediaDropdownOpen(true);
+              setActiveMegaMenu(null);
+            }}
+            onMouseLeave={() => setIsMediaDropdownOpen(false)}
+          >
+            <button
+              onClick={() => {
+                onNavigate('/insights');
+                setIsMediaDropdownOpen(false);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-200 flex items-center gap-1 ${
+                ['/projects', '/insights', '/careers', '/gallery'].includes(currentRoute)
+                  ? 'text-[#A3E635] bg-[#1E5E3A]/80 border border-[#A3E635]/40 shadow-inner'
+                  : 'text-white/90 hover:text-[#A3E635] hover:bg-white/10'
+              }`}
+            >
+              <span>Media & Projects</span>
+              <ChevronDown className={`w-3 h-3 text-[#A3E635]/80 transition-transform ${isMediaDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu */}
+            <AnimatePresence>
+              {isMediaDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  className="absolute top-full left-0 mt-2 w-64 bg-[#0B2B1B] border border-[#A3E635]/30 rounded-2xl shadow-2xl p-2 z-50 overflow-hidden"
+                >
+                  <div className="px-3 py-1.5 border-b border-[#1E5E3A]/40 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3E635]">
+                      Explore Media & Projects
+                    </span>
+                  </div>
+                  {mediaSublinks.map((sub) => {
+                    const IconComp = sub.icon;
+                    return (
+                      <button
+                        key={sub.name}
+                        onClick={() => {
+                          onNavigate(sub.route);
+                          setIsMediaDropdownOpen(false);
+                        }}
+                        className="w-full text-left p-2.5 rounded-xl hover:bg-[#1E5E3A] transition-colors flex items-start gap-3 group"
+                      >
+                        <div className="p-2 rounded-lg bg-[#062114] group-hover:bg-[#A3E635] text-[#A3E635] group-hover:text-[#0B2B1B] transition-colors shrink-0">
+                          <IconComp className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white group-hover:text-[#A3E635] transition-colors">
+                            {sub.name}
+                          </div>
+                          <div className="text-[11px] text-emerald-200/70 mt-0.5">
+                            {sub.desc}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Dashboard */}
+          <button
+            onClick={() => {
+              onNavigate('/dashboard');
+              setActiveMegaMenu(null);
+              setIsMediaDropdownOpen(false);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-200 ${
+              currentRoute === '/dashboard'
+                ? 'text-[#A3E635] bg-[#1E5E3A]/80 border border-[#A3E635]/40 shadow-inner'
+                : 'text-white/90 hover:text-[#A3E635] hover:bg-white/10'
+            }`}
+          >
+            Dashboard
+          </button>
         </nav>
 
         {/* Right Action Icons & CTA */}
@@ -116,7 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Dashboard Quick Creator Button */}
           <button
             onClick={() => onNavigate('/dashboard')}
-            className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1E5E3A]/70 hover:bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/30 text-xs font-bold transition-all hover:scale-105"
+            className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E5E3A]/70 hover:bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/30 text-xs font-bold transition-all hover:scale-105"
             title="Publisher Dashboard"
           >
             <PenTool className="w-3.5 h-3.5" />
@@ -182,4 +336,5 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
 

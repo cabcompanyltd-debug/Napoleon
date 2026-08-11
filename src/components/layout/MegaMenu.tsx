@@ -35,11 +35,12 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ isOpen, activeMenu, onClose,
         };
       case 'operations':
         return {
-          title: 'Operations & Infrastructure',
-          tagline: 'Precision machinery, storage silos, and cold-chain supply routes.',
+          title: 'Operations & Precision Infrastructure',
+          tagline: 'Precision machinery, storage silos, IoT telemetry & cold-chain supply routes.',
           links: [
             { name: 'Operations Overview', route: '/operations', desc: 'End-to-end farm logistics & machinery' },
             { name: 'Farm Directory & Interactive Map', route: '/operations/farms', desc: 'Real Leaflet map & farm profiles' },
+            { name: 'Precision Ag & Telemetry', route: '/technology', desc: 'IoT soil sensors, drones & solar fertigation' },
             { name: 'Processing & Storage', route: '/operations#processing', desc: 'Automated silos & cold packhouses' },
             { name: 'Agricultural Services', route: '/services', desc: 'Farm development & commercial consulting' }
           ],
