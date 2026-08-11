@@ -57,9 +57,24 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           <form onSubmit={handleSubscribe} className="w-full lg:w-auto flex-1 max-w-md">
             {subscribed ? (
-              <div className="p-4 rounded-2xl bg-[#1E5E3A] border border-[#A3E635] text-[#A3E635] text-sm font-bold flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 shrink-0" />
-                <span>Thank you! Your email has been subscribed.</span>
+              <div className="p-5 rounded-2xl bg-[#062114] border border-[#A3E635] text-white text-sm font-bold flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl animate-fade-in">
+                <div className="flex items-center gap-3 text-[#A3E635]">
+                  <CheckCircle2 className="w-6 h-6 shrink-0" />
+                  <div>
+                    <p className="text-sm font-extrabold">Subscription Confirmed!</p>
+                    <p className="text-xs text-emerald-200/80 font-normal">You'll receive Volta farm updates & market reports.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubscribed(false);
+                    setEmail('');
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-[#1E5E3A] hover:bg-[#A3E635] hover:text-[#0B2B1B] text-[#A3E635] text-xs font-bold transition-colors whitespace-nowrap"
+                >
+                  Add Another Email
+                </button>
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row gap-2">
@@ -67,20 +82,20 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className="flex-1 px-4 py-3.5 rounded-xl bg-black/40 border border-[#A3E635]/30 text-white placeholder-emerald-200/50 text-sm focus:outline-none focus:border-[#A3E635]"
+                  placeholder="Enter your corporate email address"
+                  className="flex-1 px-4 py-3.5 rounded-xl bg-black/50 border border-[#A3E635]/40 text-white placeholder-emerald-200/60 text-sm focus:outline-none focus:border-[#A3E635] focus:ring-1 focus:ring-[#A3E635]"
                 />
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-3.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-bold text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg"
+                  className="px-6 py-3.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shrink-0"
                 >
-                  <span>{isSubmitting ? 'Joining...' : 'Subscribe'}</span>
+                  <span>{isSubmitting ? 'Subscribing...' : 'Subscribe'}</span>
                   <Send className="w-4 h-4" />
                 </button>
               </div>
             )}
-            {errorMsg && <p className="text-xs text-red-400 mt-2">{errorMsg}</p>}
+            {errorMsg && <p className="text-xs text-red-400 font-semibold mt-2">{errorMsg}</p>}
           </form>
         </div>
 

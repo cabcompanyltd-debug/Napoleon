@@ -1,7 +1,8 @@
 import React from 'react';
-import { Tractor, ArrowRight, ShieldCheck, Cpu } from 'lucide-react';
+import { Tractor, ArrowRight } from 'lucide-react';
 import { SERVICES_DATA } from '../data/companyData';
 import { Reveal } from '../components/animations/Reveal';
+import { YieldCalculator } from '../components/home/YieldCalculator';
 
 interface Props {
   onNavigate: (route: string) => void;
@@ -26,7 +27,7 @@ export const ServicesPage: React.FC<Props> = ({ onNavigate }) => {
 
       <section className="bg-[#F9F8F3] text-[#132A13] py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
             {SERVICES_DATA.map((srv) => (
               <Reveal key={srv.id} variant="fadeUp">
                 <div className="p-8 rounded-3xl bg-white border border-[#1E5E3A]/15 shadow-xl space-y-4">
@@ -51,6 +52,9 @@ export const ServicesPage: React.FC<Props> = ({ onNavigate }) => {
           </div>
         </div>
       </section>
+
+      {/* AGRICULTURAL YIELD CALCULATOR */}
+      <YieldCalculator onNavigate={onNavigate} />
     </div>
   );
 };

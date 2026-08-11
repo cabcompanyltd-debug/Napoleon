@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Activity, Radio, Cpu, Sun, CloudRain, ShieldCheck, Play, Pause, RefreshCw, Zap } from 'lucide-react';
 import { Reveal } from '../components/animations/Reveal';
 import { StatCounter } from '../components/animations/StatCounter';
+import { YieldCalculator } from '../components/home/YieldCalculator';
 
 interface TechnologyPageProps {
   onNavigate: (route: string) => void;
@@ -139,6 +140,9 @@ export const TechnologyPage: React.FC<TechnologyPageProps> = ({ onNavigate }) =>
           </div>
         </div>
       </section>
+
+      {/* AGRICULTURAL YIELD CALCULATOR */}
+      <YieldCalculator onNavigate={onNavigate} />
     </div>
   );
 };

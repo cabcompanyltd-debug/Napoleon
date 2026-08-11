@@ -12,6 +12,7 @@ import { AnimatedHeading } from '../components/animations/AnimatedHeading';
 import { StatCounter } from '../components/animations/StatCounter';
 import { TelemetryWidget } from '../components/home/TelemetryWidget';
 import { YieldCalculator } from '../components/home/YieldCalculator';
+import { NewsTicker } from '../components/home/NewsTicker';
 
 interface HomeProps {
   onNavigate: (route: string) => void;
@@ -56,9 +57,12 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="w-full space-y-0 bg-[#061A10] text-white">
+    <div className="w-full space-y-0 bg-[#061A10] text-white pt-20">
+      {/* ANIMATED HORIZONTAL NEWS TICKER */}
+      <NewsTicker onNavigate={onNavigate} />
+
       {/* HERO SECTION WITH LUXURY GRADIENT OVERLAY */}
-      <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-mesh-dark pt-20">
+      <section className="relative min-h-[88vh] flex items-center justify-center overflow-hidden bg-mesh-dark">
         {/* Ambient Glowing Orbs */}
         <div className="absolute top-1/4 left-10 w-96 h-96 bg-emerald-500/15 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-80 h-80 bg-[#A3E635]/10 rounded-full blur-[100px] pointer-events-none" />
