@@ -40,9 +40,22 @@ import { FaqPage } from './pages/FaqPage';
 import { LegalPages } from './pages/LegalPages';
 import { NotFoundPage } from './pages/NotFoundPage';
 
+const getCleanRoute = (): string => {
+  const hash = window.location.hash;
+  if (hash && (hash.startsWith('#/') || hash.startsWith('#'))) {
+    const hashPath = hash.replace(/^#/, '');
+    if (hashPath.startsWith('/')) return hashPath;
+  }
+  let path = window.location.pathname || '/';
+  if (path.length > 1 && path.endsWith('/')) {
+    path = path.slice(0, -1);
+  }
+  return path || '/';
+};
+
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [currentRoute, setCurrentRoute] = useState(window.location.pathname || '/');
+  const [currentRoute, setCurrentRoute] = useState<string>(() => getCleanRoute());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -61,18 +74,26 @@ export default function App() {
     };
   }, []);
 
-  // Sync route on popstate (browser back/forward)
+  // Sync route on popstate or hashchange (browser back/forward & reload)
   useEffect(() => {
-    const handlePopState = () => {
-      setCurrentRoute(window.location.pathname || '/');
+    const handleRouteSync = () => {
+      setCurrentRoute(getCleanRoute());
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleRouteSync);
+    window.addEventListener('hashchange', handleRouteSync);
+    return () => {
+      window.removeEventListener('popstate', handleRouteSync);
+      window.removeEventListener('hashchange', handleRouteSync);
+    };
   }, []);
 
   const navigate = (route: string) => {
-    window.history.pushState({}, '', route);
-    setCurrentRoute(route);
+    let cleanRoute = route;
+    if (cleanRoute.length > 1 && cleanRoute.endsWith('/')) {
+      cleanRoute = cleanRoute.slice(0, -1);
+    }
+    window.history.pushState({}, '', cleanRoute);
+    setCurrentRoute(cleanRoute);
     setIsMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
