@@ -155,9 +155,9 @@ export const YieldCalculator: React.FC<{ onNavigate: (route: string) => void }> 
             </div>
 
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-[#0B2B1B]/60 border border-[#A3E635]/20 flex items-center justify-between">
+              <div className="p-5 rounded-2xl bg-[#0B2B1B]/80 border border-[#A3E635]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-[#A3E635]/20 text-[#A3E635]">
+                  <div className="p-2.5 rounded-xl bg-[#A3E635]/20 text-[#A3E635] shrink-0">
                     <Sprout className="w-5 h-5" />
                   </div>
                   <div>
@@ -165,14 +165,16 @@ export const YieldCalculator: React.FC<{ onNavigate: (route: string) => void }> 
                     <span className="text-xs text-emerald-100/70">Metric Tons</span>
                   </div>
                 </div>
-                <span className="text-2xl sm:text-3xl font-extrabold text-[#A3E635] font-num">
-                  {projectedMT.toLocaleString()} MT
-                </span>
+                <div className="pt-2 sm:pt-0 border-t sm:border-t-0 border-[#A3E635]/15 flex flex-col">
+                  <span className="text-2xl sm:text-3xl font-extrabold text-[#A3E635] font-num">
+                    {projectedMT.toLocaleString()} MT
+                  </span>
+                </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#0B2B1B]/60 border border-[#A3E635]/20 flex items-center justify-between">
+              <div className="p-5 rounded-2xl bg-[#0B2B1B]/80 border border-[#A3E635]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-[#A3E635]/20 text-[#A3E635]">
+                  <div className="p-2.5 rounded-xl bg-[#A3E635]/20 text-[#A3E635] shrink-0">
                     <DollarSign className="w-5 h-5" />
                   </div>
                   <div>
@@ -180,14 +182,16 @@ export const YieldCalculator: React.FC<{ onNavigate: (route: string) => void }> 
                     <span className="text-xs text-emerald-100/70">Est. Price (GHS)</span>
                   </div>
                 </div>
-                <span className="text-2xl sm:text-3xl font-extrabold text-white font-num">
-                  GHS {totalRevenueGHS.toLocaleString()}
-                </span>
+                <div className="pt-2 sm:pt-0 border-t sm:border-t-0 border-[#A3E635]/15 flex flex-col">
+                  <span className="text-2xl sm:text-3xl font-extrabold text-white font-num">
+                    GHS {totalRevenueGHS.toLocaleString()}
+                  </span>
+                </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#0B2B1B]/60 border border-[#A3E635]/20 flex items-center justify-between">
+              <div className="p-5 rounded-2xl bg-[#0B2B1B]/80 border border-[#A3E635]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-[#A3E635]/20 text-[#A3E635]">
+                  <div className="p-2.5 rounded-xl bg-[#A3E635]/20 text-[#A3E635] shrink-0">
                     <Droplets className="w-5 h-5" />
                   </div>
                   <div>
@@ -195,9 +199,11 @@ export const YieldCalculator: React.FC<{ onNavigate: (route: string) => void }> 
                     <span className="text-xs text-emerald-100/70">Sub-surface Drip</span>
                   </div>
                 </div>
-                <span className="text-xl font-bold text-emerald-300 font-num">
-                  {totalWaterSaved.toLocaleString()} m³ Saved
-                </span>
+                <div className="pt-2 sm:pt-0 border-t sm:border-t-0 border-[#A3E635]/15 flex flex-col">
+                  <span className="text-xl sm:text-2xl font-bold text-emerald-300 font-num">
+                    {totalWaterSaved.toLocaleString()} m³ Saved
+                  </span>
+                </div>
               </div>
             </div>
 

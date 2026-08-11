@@ -146,7 +146,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-4 rounded-2xl bg-[#061A10]/80 border border-[#1E5E3A]/30">
                       <div className="flex items-center gap-2 text-emerald-300 text-xs mb-1">
                         <Tractor className="w-4 h-4 text-[#A3E635]" />
@@ -205,11 +205,11 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       <TelemetryWidget />
 
       {/* STATISTICS & METRICS SECTION */}
-      <section className="bg-gradient-to-b from-[#061A10] via-[#0B2B1B] to-[#04120B] text-white py-16 border-b border-[#1E5E3A]/40">
+      <section className="bg-gradient-to-b from-[#061A10] via-[#0B2B1B] to-[#04120B] text-white py-12 sm:py-16 border-b border-[#1E5E3A]/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 sm:gap-8 text-center">
             {COMPANY_INFO.stats.map((st, idx) => (
-              <div key={idx} className="p-4 rounded-2xl bg-[#0B2B1B]/60 border border-[#1E5E3A]/30 shadow-lg">
+              <div key={idx} className="w-full p-6 sm:p-5 rounded-2xl bg-[#0B2B1B]/80 border border-[#1E5E3A]/40 shadow-xl flex flex-col items-center justify-center text-center transition-all hover:border-[#A3E635]/50 hover:bg-[#0E3823]">
                 <StatCounter
                   value={st.number}
                   suffix={st.suffix}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Handshake, CheckCircle2, Send, Building } from 'lucide-react';
-import { submitPartnerInquiry } from '../lib/firebase';
+import { submitPartnerInquiry } from '../lib/insforge';
 
 interface Props {
   onNavigate: (route: string) => void;
@@ -21,11 +21,12 @@ export const PartnershipsPage: React.FC<Props> = ({ onNavigate }) => {
     setIsSubmitting(true);
     try {
       await submitPartnerInquiry({
-        fullName: contactPerson,
+        companyName: orgName,
+        contactPerson,
         email,
-        organization: orgName,
-        partnerCategory: partnerType,
-        message: proposal
+        phone,
+        partnershipType: partnerType,
+        details: proposal
       });
       setSubmitted(true);
     } catch (err) {

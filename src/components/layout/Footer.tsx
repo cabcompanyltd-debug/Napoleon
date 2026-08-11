@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sprout, MapPin, Phone, Mail, Send, CheckCircle2, Globe, Shield } from 'lucide-react';
 import { COMPANY_INFO } from '../../data/companyData';
-import { subscribeNewsletter } from '../../lib/firebase';
+import { subscribeNewsletter } from '../../lib/insforge';
 import logoImg from '../../assets/logo.png';
 
 interface FooterProps {
@@ -89,13 +89,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* Col 1: Corporate Info */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md border border-white/30 inline-flex items-center justify-center">
-                <img
-                  src={logoImg}
-                  alt="Napoleon Steadings Ltd."
-                  className="h-8 sm:h-10 w-auto object-contain"
-                />
-              </div>
+              <img
+                src="/logo.png"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = logoImg;
+                }}
+                alt="Napoleon Steadings Ltd."
+                className="h-10 sm:h-12 w-auto object-contain drop-shadow-md"
+              />
             </div>
 
             <p className="text-xs text-emerald-200/80 leading-relaxed max-w-sm">

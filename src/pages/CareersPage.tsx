@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Briefcase, MapPin, CheckCircle2, Send, X } from 'lucide-react';
 import { CAREERS_DATA } from '../data/companyData';
-import { submitContactInquiry } from '../lib/firebase';
+import { submitContactInquiry } from '../lib/insforge';
 
 interface Props {
   onNavigate: (route: string) => void;
@@ -22,11 +22,10 @@ export const CareersPage: React.FC<Props> = () => {
     setIsSubmitting(true);
     try {
       await submitContactInquiry({
-        fullName,
+        name: fullName,
         email,
         phone,
-        inquiryType: 'Career Job Application',
-        subject: `Application: ${selectedJob.title}`,
+        subject: `Career Application: ${selectedJob.title}`,
         message: `Cover Note: ${coverNote}`
       });
       setSubmitted(true);

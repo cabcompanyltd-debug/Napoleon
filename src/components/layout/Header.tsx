@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sprout, Search, User, Menu, ChevronDown, Phone, ShieldCheck, PenTool, LayoutDashboard } from 'lucide-react';
 import { MegaMenu } from './MegaMenu';
-import { User as FirebaseUser } from 'firebase/auth';
+import { UserProfile } from '../../lib/insforge';
 import logoImg from '../../assets/logo.png';
 
 interface HeaderProps {
@@ -10,7 +10,7 @@ interface HeaderProps {
   onOpenSearch: () => void;
   onOpenAuth: () => void;
   onOpenMobileMenu: () => void;
-  currentUser: FirebaseUser | null;
+  currentUser: UserProfile | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -67,11 +67,14 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex items-center group text-left focus:outline-none"
           aria-label="Napoleon Steadings - Home"
         >
-          <div className="bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-lg border border-white/30 flex items-center justify-center transition-transform group-hover:scale-105">
+          <div className="flex items-center justify-center transition-transform group-hover:scale-105 py-1">
             <img
-              src={logoImg}
+              src="/logo.png"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = logoImg;
+              }}
               alt="Napoleon Steadings"
-              className="h-8 sm:h-10 w-auto object-contain"
+              className="h-10 sm:h-12 w-auto object-contain drop-shadow-md"
             />
           </div>
         </button>
@@ -144,8 +147,8 @@ export const Header: React.FC<HeaderProps> = ({
             title={currentUser ? `Account: ${currentUser.email}` : 'Sign In'}
             aria-label="User Account"
           >
-            {currentUser?.photoURL ? (
-              <img src={currentUser.photoURL} alt="User" className="w-5 h-5 rounded-full object-cover border border-[#A3E635]" />
+            {currentUser?.avatarUrl ? (
+              <img src={currentUser.avatarUrl} alt="User" className="w-5 h-5 rounded-full object-cover border border-[#A3E635]" />
             ) : (
               <User className="w-4 h-4" />
             )}

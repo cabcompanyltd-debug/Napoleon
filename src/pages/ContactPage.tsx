@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle2, Globe, Navigation, Building2 } from 'lucide-react';
 import { COMPANY_INFO } from '../data/companyData';
-import { submitContactInquiry } from '../lib/firebase';
+import { submitContactInquiry } from '../lib/insforge';
 import { InteractiveMap } from '../components/map/InteractiveMap';
 
 export const ContactPage: React.FC = () => {
@@ -20,11 +20,10 @@ export const ContactPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       await submitContactInquiry({
-        fullName,
+        name: fullName,
         email,
         phone,
-        inquiryType,
-        subject,
+        subject: `${inquiryType} - ${subject}`,
         message
       });
       setSubmitted(true);

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowRight, Calendar, User, Heart, Sparkles, PlusCircle, Globe, ShieldCheck } from 'lucide-react';
 import { NEWS_DATA } from '../data/companyData';
 import { Reveal } from '../components/animations/Reveal';
-import { getPublishedBlogPosts, BlogPostData } from '../lib/firebase';
+import { getPublishedBlogPosts, BlogPostData } from '../lib/insforge';
 
 interface Props {
   onNavigate: (route: string) => void;

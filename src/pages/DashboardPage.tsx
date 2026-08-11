@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
 import { 
   PlusCircle, 
   FileText, 
@@ -24,25 +23,36 @@ import {
   ShieldAlert,
   MessageSquare,
   CheckCircle2,
-  RefreshCw
+  RefreshCw,
+  Users,
+  Handshake,
+  Send,
+  Plus
 } from 'lucide-react';
 import { 
-  BlogPostData, 
-  getUserBlogPosts, 
-  getPublishedBlogPosts,
-  createBlogPost, 
-  updateBlogPost, 
-  deleteBlogPost, 
-  logoutUser,
+  UserProfile,
+  BlogPostData,
+  ContactInquiry,
+  PartnerInquiry,
+  NewsletterSubscriber,
+  getAllBlogPosts,
+  saveBlogPost,
+  deleteBlogPost,
   getContactInquiries,
-  updateContactInquiryStatus,
-  getUserRole,
-  saveUserProfileWithRole
-} from '../lib/firebase';
+  updateInquiryStatus,
+  deleteContactInquiry,
+  getPartnerInquiries,
+  updatePartnerInquiryStatus,
+  deletePartnerInquiry,
+  getNewsletterSubscribers,
+  deleteSubscriber,
+  logoutUser,
+  mockLoginAsAdmin
+} from '../lib/insforge';
 import { RichBlogEditor } from '../components/dashboard/RichBlogEditor';
 
 interface DashboardPageProps {
-  currentUser: FirebaseUser | null;
+  currentUser: UserProfile | null;
   onNavigate: (route: string) => void;
   onOpenAuth: () => void;
 }
@@ -52,44 +62,39 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onOpenAuth
 }) => {
-  const [activeTab, setActiveTab] = useState<'my_posts' | 'all_posts' | 'inquiries' | 'create'>('my_posts');
-  const [userRole, setUserRole] = useState<'admin' | 'user'>('user');
-  const [userPosts, setUserPosts] = useState<BlogPostData[]>([]);
-  const [allPosts, setAllPosts] = useState<BlogPostData[]>([]);
-  const [inquiries, setInquiries] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'all_posts' | 'inquiries' | 'partners' | 'subscribers' | 'create'>('overview');
+  const [blogPosts, setBlogPosts] = useState<BlogPostData[]>([]);
+  const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
+  const [partners, setPartners] = useState<PartnerInquiry[]>([]);
+  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPostData | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Fetch posts and role for logged in user
   const loadDashboardData = async () => {
-    if (!currentUser) return;
     setIsLoading(true);
     try {
-      const role = await getUserRole(currentUser.uid);
-      setUserRole(role);
+      const posts = await getAllBlogPosts();
+      setBlogPosts(posts);
 
-      const posts = await getUserBlogPosts(currentUser.uid);
-      setUserPosts(posts);
+      const inq = await getContactInquiries();
+      setInquiries(inq);
 
-      if (role === 'admin') {
-        const pub = await getPublishedBlogPosts();
-        setAllPosts(pub);
-        const inq = await getContactInquiries();
-        setInquiries(inq);
-      }
+      const part = await getPartnerInquiries();
+      setPartners(part);
+
+      const sub = await getNewsletterSubscribers();
+      setSubscribers(sub);
     } catch (err) {
-      console.error('Error loading dashboard data:', err);
+      console.error('Error loading InsForge dashboard data:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (currentUser) {
-      loadDashboardData();
-    }
+    loadDashboardData();
   }, [currentUser]);
 
   if (!currentUser) {
@@ -99,40 +104,38 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="w-16 h-16 rounded-2xl bg-[#1E5E3A] text-[#A3E635] flex items-center justify-center mx-auto border border-[#A3E635]/30">
             <ShieldCheck className="w-8 h-8" />
           </div>
-          <h2 className="font-editorial text-3xl font-bold text-white">
-            Publisher & Admin Portal
-          </h2>
-          <p className="text-xs text-emerald-200/80 leading-relaxed">
-            Please sign in with your Google Account to access the Napoleon Steadings blog publisher and executive desk.
-          </p>
-          <button
-            onClick={onOpenAuth}
-            className="w-full py-4 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-sm shadow-xl transition-all"
-          >
-            Sign In with Google Account
-          </button>
+
+          <div className="space-y-2">
+            <h2 className="font-editorial text-2xl font-bold text-white">InsForge Management Portal</h2>
+            <p className="text-xs text-emerald-200/80 leading-relaxed">
+              Please sign in to access Napoleon Steadings administrator dashboard, publish articles and manage partner proposals.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                mockLoginAsAdmin();
+              }}
+              className="w-full py-3.5 px-4 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-sm shadow-xl transition-all flex items-center justify-center gap-2"
+            >
+              <ShieldAlert className="w-4 h-4" />
+              <span>One-Click Login as Admin</span>
+            </button>
+
+            <button
+              onClick={onOpenAuth}
+              className="w-full py-3 px-4 rounded-xl bg-[#1E5E3A] hover:bg-[#184B2E] text-white font-bold text-xs transition-colors border border-[#A3E635]/30"
+            >
+              Custom Sign In Options
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  const handleRoleToggle = async (newRole: 'admin' | 'user') => {
-    setIsLoading(true);
-    try {
-      await saveUserProfileWithRole(currentUser, newRole);
-      setUserRole(newRole);
-      if (newRole === 'admin') {
-        const inq = await getContactInquiries();
-        setInquiries(inq);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreateOrUpdatePost = async (data: {
+  const handleSavePost = async (data: {
     title: string;
     summary: string;
     content: string;
@@ -144,143 +147,125 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   }) => {
     setIsSubmitting(true);
     try {
-      // Create slug from title
-      const slug = data.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
+      await saveBlogPost({
+        id: editingPost ? editingPost.id : undefined,
+        title: data.title,
+        excerpt: data.summary,
+        content: data.content,
+        category: data.category,
+        imageUrl: data.coverImage,
+        status: data.isPublished ? 'published' : 'draft',
+        author: currentUser.fullName || 'Napoleon Editorial',
+        readTime: data.readTime,
+      });
 
-      if (editingPost && editingPost.id) {
-        await updateBlogPost(editingPost.id, {
-          ...data,
-          slug: editingPost.slug || slug
-        });
-        setSuccessMessage('Article updated successfully!');
-      } else {
-        await createBlogPost({
-          ...data,
-          slug,
-          authorName: currentUser.displayName || 'Napoleon Steadings Contributor',
-          authorEmail: currentUser.email || 'author@napoleonsteadings.com',
-          authorUid: currentUser.uid,
-          authorPhoto: currentUser.photoURL || '',
-          publishedAt: new Date().toISOString()
-        });
-        setSuccessMessage('Article published successfully!');
-      }
-
-      await loadDashboardData();
+      setSuccessMessage(editingPost ? 'Article updated successfully!' : 'New article published successfully!');
       setEditingPost(null);
-      setActiveTab('my_posts');
+      setActiveTab('all_posts');
+      await loadDashboardData();
 
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err) {
-      console.error('Error saving blog post:', err);
+      console.error('Error saving article:', err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDelete = async (postId: string) => {
+  const handleDeletePost = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this article?')) return;
     try {
-      await deleteBlogPost(postId);
-      setUserPosts(userPosts.filter((p) => p.id !== postId));
-      setAllPosts(allPosts.filter((p) => p.id !== postId));
-    } catch (err) {
-      console.error('Error deleting post:', err);
-    }
-  };
-
-  const handleTogglePublish = async (post: BlogPostData) => {
-    if (!post.id) return;
-    try {
-      await updateBlogPost(post.id, { isPublished: !post.isPublished });
-      setUserPosts(
-        userPosts.map((p) => (p.id === post.id ? { ...p, isPublished: !p.isPublished } : p))
-      );
-    } catch (err) {
-      console.error('Error toggling publish status:', err);
-    }
-  };
-
-  const handleInquiryStatusChange = async (id: string, newStatus: string) => {
-    try {
-      await updateContactInquiryStatus(id, newStatus);
-      setInquiries(
-        inquiries.map((inq) => (inq.id === id ? { ...inq, status: newStatus } : inq))
-      );
+      await deleteBlogPost(id);
+      await loadDashboardData();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const totalLikes = userPosts.reduce((acc, curr) => acc + (curr.likesCount || 0), 0);
-  const totalPublished = userPosts.filter((p) => p.isPublished).length;
+  const handleInquiryStatus = async (id: string, status: ContactInquiry['status']) => {
+    try {
+      await updateInquiryStatus(id, status);
+      await loadDashboardData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    if (!window.confirm('Delete this contact inquiry record?')) return;
+    try {
+      await deleteContactInquiry(id);
+      await loadDashboardData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handlePartnerStatus = async (id: string, status: PartnerInquiry['status']) => {
+    try {
+      await updatePartnerInquiryStatus(id, status);
+      await loadDashboardData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeletePartner = async (id: string) => {
+    if (!window.confirm('Delete this partner proposal?')) return;
+    try {
+      await deletePartnerInquiry(id);
+      await loadDashboardData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteSubscriber = async (id: string) => {
+    if (!window.confirm('Remove this newsletter subscriber?')) return;
+    try {
+      await deleteSubscriber(id);
+      await loadDashboardData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
-    <div className="w-full pt-24 pb-24 bg-[#070E0A] text-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+    <div className="w-full pt-28 pb-24 min-h-screen bg-[#06170E] text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
-        {/* User / Admin Header Profile Card */}
-        <div className="p-8 rounded-3xl bg-slanted-dual border border-[#1E5E3A]/50 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-          <div className="flex items-center gap-5 relative z-10">
-            {currentUser.photoURL ? (
-              <img
-                src={currentUser.photoURL}
-                alt={currentUser.displayName || 'User'}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-[#A3E635] shadow-xl"
-              />
-            ) : (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#1E5E3A] border-2 border-[#A3E635] flex items-center justify-center text-[#A3E635] font-bold text-2xl">
-                {currentUser.displayName?.charAt(0) || 'A'}
-              </div>
-            )}
+        {/* Top Header Banner */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#0C3520] via-[#092B19] to-[#082214] border border-[#1E5E3A] shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-[#A3E635]/5 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#A3E635] bg-[#1E5E3A]/70 px-3 py-0.5 rounded-full border border-[#A3E635]/40 inline-flex items-center gap-1">
-                  {userRole === 'admin' ? <ShieldAlert className="w-3 h-3 text-amber-300" /> : <ShieldCheck className="w-3 h-3" />}
-                  <span>{userRole === 'admin' ? 'Executive Admin Desk' : 'Verified Author Desk'}</span>
-                </span>
-              </div>
-              <h1 className="font-editorial text-2xl sm:text-3xl font-bold text-white">
-                {currentUser.displayName || 'Napoleon Contributor'}
-              </h1>
-              <p className="text-xs text-emerald-200/80 font-mono">
-                {currentUser.email}
-              </p>
+          <div className="space-y-2 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1E5E3A]/80 border border-[#A3E635]/40 text-[#A3E635] text-[11px] font-bold uppercase tracking-wider">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-300" />
+              <span>InsForge Backend Connected</span>
             </div>
+            <h1 className="font-editorial text-3xl sm:text-4xl font-bold text-white tracking-tight">
+              Executive Management Desk
+            </h1>
+            <p className="text-xs sm:text-sm text-emerald-200/80 max-w-xl">
+              Welcome back, <span className="font-bold text-white">{currentUser.fullName}</span>. Manage publications, review corporate inquiries, and monitor agribusiness performance.
+            </p>
           </div>
 
-          {/* Role Toggle Switch & Quick Actions */}
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto relative z-10">
-            <div className="p-1 rounded-2xl bg-black/60 border border-[#1E5E3A] flex items-center gap-1">
-              <button
-                onClick={() => handleRoleToggle('user')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  userRole === 'user'
-                    ? 'bg-[#1E5E3A] text-[#A3E635]'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Author View
-              </button>
-              <button
-                onClick={() => handleRoleToggle('admin')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  userRole === 'admin'
-                    ? 'bg-[#A3E635] text-[#0B2B1B]'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Admin Desk
-              </button>
-            </div>
+          <div className="flex items-center gap-3 relative z-10">
+            <button
+              onClick={() => {
+                setEditingPost(null);
+                setActiveTab('create');
+              }}
+              className="px-4 py-2.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-xs flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Compose Article</span>
+            </button>
 
             <button
-              onClick={() => loadDashboardData()}
-              className="p-3 rounded-2xl bg-black/40 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] border border-white/10 transition-colors"
+              onClick={loadDashboardData}
+              className="p-2.5 rounded-xl bg-black/40 hover:bg-[#1E5E3A] text-[#A3E635] border border-white/10 transition-colors"
               title="Refresh Data"
             >
               <RefreshCw className="w-4 h-4" />
@@ -288,7 +273,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
             <button
               onClick={() => logoutUser()}
-              className="p-3 rounded-2xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 transition-colors"
+              className="p-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 transition-colors"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -296,290 +281,480 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
 
-        {/* Success Banner */}
         {successMessage && (
-          <div className="p-4 rounded-2xl bg-[#1E5E3A] border border-[#A3E635] text-[#A3E635] text-sm font-bold flex items-center gap-3 shadow-lg">
-            <CheckCircle className="w-5 h-5 shrink-0" />
+          <div className="p-4 rounded-2xl bg-[#A3E635]/20 border border-[#A3E635] text-[#A3E635] font-bold text-xs flex items-center gap-3 animate-fade-in">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
 
-        {/* Dashboard Navigation Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1E5E3A]/30 pb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => {
-                setEditingPost(null);
-                setActiveTab('my_posts');
-              }}
-              className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
-                activeTab === 'my_posts' && !editingPost
-                  ? 'bg-[#A3E635] text-[#0B2B1B] shadow-lg'
-                  : 'bg-black/40 text-white hover:bg-white/10'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              <span>My Published Articles ({userPosts.length})</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setEditingPost(null);
-                setActiveTab('create');
-              }}
-              className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
-                activeTab === 'create' || editingPost
-                  ? 'bg-[#A3E635] text-[#0B2B1B] shadow-lg'
-                  : 'bg-black/40 text-white hover:bg-white/10'
-              }`}
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>{editingPost ? 'Editing Article' : 'Write & Publish Blog'}</span>
-            </button>
-
-            {userRole === 'admin' && (
-              <button
-                onClick={() => {
-                  setEditingPost(null);
-                  setActiveTab('inquiries');
-                }}
-                className={`px-5 py-3 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
-                  activeTab === 'inquiries'
-                    ? 'bg-[#A3E635] text-[#0B2B1B] shadow-lg'
-                    : 'bg-black/40 text-white hover:bg-white/10'
-                }`}
-              >
-                <Inbox className="w-4 h-4" />
-                <span>Contact Inquiries ({inquiries.length})</span>
-              </button>
-            )}
-          </div>
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#1E5E3A]/60">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'overview'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span>Overview & Analytics</span>
+          </button>
 
           <button
-            onClick={() => onNavigate('/insights')}
-            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-2 border border-white/10"
+            onClick={() => setActiveTab('all_posts')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'all_posts'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
           >
-            <Globe className="w-4 h-4 text-[#A3E635]" />
-            <span>Public Website Blog Page</span>
+            <FileText className="w-4 h-4" />
+            <span>Articles ({blogPosts.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('inquiries')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'inquiries'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Inbox className="w-4 h-4" />
+            <span>Inquiries ({inquiries.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('partners')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'partners'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Handshake className="w-4 h-4" />
+            <span>Partnerships ({partners.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('subscribers')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'subscribers'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Subscribers ({subscribers.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setEditingPost(null);
+              setActiveTab('create');
+            }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ml-auto ${
+              activeTab === 'create'
+                ? 'bg-[#A3E635] text-[#0B2B1B] font-extrabold'
+                : 'bg-[#1E5E3A]/60 text-[#A3E635] hover:bg-[#1E5E3A]'
+            }`}
+          >
+            <Plus className="w-4 h-4" />
+            <span>Composer</span>
           </button>
         </div>
 
-        {/* Tab Content */}
-        {activeTab === 'create' || editingPost ? (
-          <RichBlogEditor
-            initialTitle={editingPost?.title || ''}
-            initialSummary={editingPost?.summary || ''}
-            initialContent={editingPost?.content || ''}
-            initialCategory={editingPost?.category || 'Agricultural Innovation'}
-            initialCoverImage={editingPost?.coverImage}
-            initialTags={editingPost?.tags || ['GhanaAgri', 'VoltaRegion']}
-            initialIsPublished={editingPost?.isPublished ?? true}
-            onSave={handleCreateOrUpdatePost}
-            isSubmitting={isSubmitting}
-            onCancel={() => {
-              setEditingPost(null);
-              setActiveTab('my_posts');
-            }}
-          />
-        ) : activeTab === 'inquiries' && userRole === 'admin' ? (
-          /* Admin Contact Inquiries Panel */
+        {/* TAB CONTENTS */}
+
+        {/* OVERVIEW TAB */}
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-5 rounded-2xl bg-[#0B2518] border border-[#1E5E3A] space-y-2">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-xs font-bold uppercase tracking-wider">Total Articles</span>
+                  <FileText className="w-5 h-5 text-[#A3E635]" />
+                </div>
+                <div className="font-editorial text-3xl font-bold text-white">{blogPosts.length}</div>
+                <p className="text-[11px] text-emerald-300">
+                  {blogPosts.filter(p => p.status === 'published').length} published, {blogPosts.filter(p => p.status === 'draft').length} drafts
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#0B2518] border border-[#1E5E3A] space-y-2">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-xs font-bold uppercase tracking-wider">Customer Inquiries</span>
+                  <Inbox className="w-5 h-5 text-[#A3E635]" />
+                </div>
+                <div className="font-editorial text-3xl font-bold text-white">{inquiries.length}</div>
+                <p className="text-[11px] text-emerald-300">
+                  {inquiries.filter(i => i.status === 'pending').length} pending review
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#0B2518] border border-[#1E5E3A] space-y-2">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-xs font-bold uppercase tracking-wider">Partner Proposals</span>
+                  <Handshake className="w-5 h-5 text-[#A3E635]" />
+                </div>
+                <div className="font-editorial text-3xl font-bold text-white">{partners.length}</div>
+                <p className="text-[11px] text-emerald-300">
+                  {partners.filter(p => p.status === 'pending').length} requiring executive approval
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#0B2518] border border-[#1E5E3A] space-y-2">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span className="text-xs font-bold uppercase tracking-wider">Newsletter Network</span>
+                  <Users className="w-5 h-5 text-[#A3E635]" />
+                </div>
+                <div className="font-editorial text-3xl font-bold text-white">{subscribers.length}</div>
+                <p className="text-[11px] text-emerald-300">Subscribed active contacts</p>
+              </div>
+            </div>
+
+            {/* Recent Inquiries Quick Table */}
+            <div className="p-6 rounded-3xl bg-[#082114] border border-[#1E5E3A] space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-lg text-white">Recent Customer & Corporate Inquiries</h3>
+                  <p className="text-xs text-emerald-200/70">Incoming wholesale requests and farm tour inquiries</p>
+                </div>
+                <button
+                  onClick={() => setActiveTab('inquiries')}
+                  className="text-xs font-bold text-[#A3E635] hover:underline"
+                >
+                  View All Inquiries →
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#1E5E3A] text-emerald-200/70 uppercase text-[10px] tracking-wider">
+                      <th className="py-3 px-3">Sender</th>
+                      <th className="py-3 px-3">Subject</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1E5E3A]/40">
+                    {inquiries.slice(0, 4).map((inq) => (
+                      <tr key={inq.id} className="hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-white">{inq.name}</div>
+                          <div className="text-[10px] text-emerald-300 font-mono">{inq.email}</div>
+                        </td>
+                        <td className="py-3 px-3 max-w-xs truncate text-slate-200">
+                          {inq.subject || inq.message}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                            inq.status === 'pending'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          }`}>
+                            {inq.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <button
+                            onClick={() => handleInquiryStatus(inq.id, inq.status === 'pending' ? 'reviewed' : 'pending')}
+                            className="text-[11px] font-bold text-[#A3E635] hover:underline"
+                          >
+                            Mark {inq.status === 'pending' ? 'Reviewed' : 'Pending'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ALL POSTS TAB */}
+        {activeTab === 'all_posts' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-editorial text-2xl font-bold text-white">
-                  Headquarters Direct Inquiries
-                </h3>
-                <p className="text-xs text-emerald-200/70 mt-1">
-                  Messages submitted by clients, commercial partners & growers via the Contact Page.
-                </p>
+                <h3 className="font-bold text-xl text-white">InsForge Published & Draft Publications</h3>
+                <p className="text-xs text-emerald-200/70">Articles synced directly with InsForge Database</p>
               </div>
-              <span className="px-3 py-1 rounded-full bg-[#1E5E3A] text-[#A3E635] text-xs font-bold">
-                {inquiries.filter((i) => i.status === 'new').length} New Unread Messages
-              </span>
-            </div>
-
-            {inquiries.length === 0 ? (
-              <div className="p-12 rounded-3xl bg-[#081F13] border border-[#1E5E3A]/40 text-center space-y-3">
-                <Inbox className="w-12 h-12 text-[#A3E635] mx-auto opacity-70" />
-                <h4 className="font-editorial text-xl font-bold text-white">No Inquiries Logged Yet</h4>
-                <p className="text-xs text-emerald-200/70">When users submit messages on the Contact Page, they will appear here in real-time.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {inquiries.map((inq) => (
-                  <div
-                    key={inq.id}
-                    className={`p-6 rounded-3xl border transition-all ${
-                      inq.status === 'new'
-                        ? 'bg-[#0A291A] border-[#A3E635]/60 shadow-xl'
-                        : 'bg-[#081910] border-[#1E5E3A]/40 opacity-80'
-                    }`}
-                  >
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/10 pb-4 mb-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-3">
-                          <span className="font-bold text-base text-white">{inq.fullName}</span>
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#1E5E3A] text-[#A3E635] text-[10px] font-extrabold uppercase">
-                            {inq.inquiryType}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-emerald-200/80">
-                          <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5 text-[#A3E635]" /> {inq.email}</span>
-                          {inq.phone && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5 text-[#A3E635]" /> {inq.phone}</span>}
-                          <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {new Date(inq.createdAt).toLocaleString()}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleInquiryStatusChange(inq.id, inq.status === 'replied' ? 'new' : 'replied')}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all ${
-                            inq.status === 'replied'
-                              ? 'bg-[#A3E635] text-[#0B2B1B] border-[#A3E635]'
-                              : 'bg-black/40 text-emerald-300 border-[#1E5E3A] hover:bg-[#1E5E3A]'
-                          }`}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>{inq.status === 'replied' ? 'Marked Replied' : 'Mark as Replied'}</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h5 className="font-bold text-sm text-[#A3E635]">Subject: {inq.subject || 'General Inquiry'}</h5>
-                      <p className="text-xs text-slate-200 leading-relaxed bg-black/40 p-4 rounded-2xl border border-white/5 font-sans">
-                        {inq.message}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          /* User / Author Posts Grid */
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="font-editorial text-2xl font-bold text-white">
-                Your Published & Draft Insights
-              </h3>
               <button
-                onClick={() => setActiveTab('create')}
-                className="px-4 py-2.5 rounded-xl bg-[#1E5E3A] hover:bg-[#287547] text-[#A3E635] text-xs font-bold flex items-center gap-2 border border-[#A3E635]/30"
+                onClick={() => {
+                  setEditingPost(null);
+                  setActiveTab('create');
+                }}
+                className="px-4 py-2 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-xs flex items-center gap-1.5"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>Write Article</span>
+                <span>New Article</span>
               </button>
             </div>
 
-            {isLoading ? (
-              <div className="p-12 text-center text-slate-400 font-mono text-xs">
-                Fetching your articles from Firestore...
-              </div>
-            ) : userPosts.length === 0 ? (
-              <div className="p-12 rounded-3xl bg-[#092215] border border-[#1E5E3A]/40 text-center space-y-4">
-                <FileText className="w-12 h-12 text-[#A3E635] mx-auto opacity-80" />
-                <h4 className="font-editorial text-xl font-bold text-white">No Articles Published Yet</h4>
-                <p className="text-xs text-emerald-200/70 max-w-md mx-auto">
-                  You haven't created any blog articles yet. Share your agricultural expertise, farming research, or company updates!
-                </p>
-                <button
-                  onClick={() => setActiveTab('create')}
-                  className="px-6 py-3 rounded-xl bg-[#A3E635] text-[#0B2B1B] font-extrabold text-xs shadow-lg inline-flex items-center gap-2"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span>Create Your First Post</span>
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {userPosts.map((post) => (
-                  <div
-                    key={post.id || post.slug}
-                    className="p-6 rounded-3xl bg-[#082215] border border-[#1E5E3A]/50 hover:border-[#A3E635]/40 transition-all flex flex-col justify-between space-y-4 shadow-xl"
-                  >
-                    <div className="space-y-3">
-                      {post.coverImage && (
-                        <div className="rounded-2xl overflow-hidden h-44 w-full">
-                          <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="px-2.5 py-1 rounded-full bg-[#1E5E3A] text-[#A3E635] text-[10px] font-bold uppercase tracking-wider">
-                          {post.category}
-                        </span>
-
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
-                            post.isPublished
-                              ? 'bg-[#A3E635]/20 text-[#A3E635] border border-[#A3E635]/30'
-                              : 'bg-slate-800 text-slate-300'
-                          }`}
-                        >
-                          {post.isPublished ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                          <span>{post.isPublished ? 'Published' : 'Draft'}</span>
-                        </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {blogPosts.map((post) => (
+                <div key={post.id} className="rounded-2xl bg-[#092416] border border-[#1E5E3A] overflow-hidden flex flex-col justify-between shadow-xl hover:border-[#A3E635]/50 transition-all">
+                  <div>
+                    <div className="relative h-44 overflow-hidden bg-black/40">
+                      <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+                      <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[#A3E635] text-[10px] font-bold uppercase border border-[#A3E635]/30">
+                        {post.category}
                       </div>
-
-                      <h4 className="font-editorial text-xl font-bold text-white line-clamp-2">
-                        {post.title}
-                      </h4>
-
-                      <p className="text-xs text-emerald-100/70 line-clamp-2 leading-relaxed">
-                        {post.summary}
-                      </p>
+                      <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase backdrop-blur-md border border-white/20 text-white bg-black/60">
+                        {post.status}
+                      </div>
                     </div>
 
-                    <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-3 text-xs text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <Heart className="w-3.5 h-3.5 text-red-400" />
-                          <span>{post.likesCount || 0}</span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-[#A3E635]" />
-                          <span>{post.readTime}</span>
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleTogglePublish(post)}
-                          className="p-2 rounded-xl bg-black/40 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] transition-colors border border-white/10"
-                          title={post.isPublished ? 'Unpublish to Draft' : 'Publish to Live Feed'}
-                        >
-                          {post.isPublished ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setEditingPost(post);
-                            setActiveTab('create');
-                          }}
-                          className="p-2 rounded-xl bg-black/40 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] transition-colors border border-white/10"
-                          title="Edit Article"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-
-                        <button
-                          onClick={() => post.id && handleDelete(post.id)}
-                          className="p-2 rounded-xl bg-red-950/50 hover:bg-red-900 text-red-300 transition-colors border border-red-500/30"
-                          title="Delete Post"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                    <div className="p-5 space-y-3">
+                      <h4 className="font-bold text-base text-white line-clamp-2 leading-snug">{post.title}</h4>
+                      <p className="text-xs text-emerald-200/70 line-clamp-3">{post.excerpt}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+
+                  <div className="p-5 pt-0 border-t border-[#1E5E3A]/40 flex items-center justify-between text-xs mt-3">
+                    <div className="flex items-center gap-3 text-emerald-300">
+                      <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5 text-red-400" /> {post.likes}</span>
+                      <span className="text-[10px]">{post.readTime}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingPost(post);
+                          setActiveTab('create');
+                        }}
+                        className="p-1.5 rounded-lg bg-white/10 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] transition-colors"
+                        title="Edit Article"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 transition-colors"
+                        title="Delete Article"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
+        {/* INQUIRIES TAB */}
+        {activeTab === 'inquiries' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-bold text-xl text-white">Contact & Sales Inquiries</h3>
+              <p className="text-xs text-emerald-200/70">Manage incoming product orders, farm visits and customer inquiries</p>
+            </div>
+
+            <div className="space-y-4">
+              {inquiries.map((inq) => (
+                <div key={inq.id} className="p-5 rounded-2xl bg-[#092416] border border-[#1E5E3A] space-y-3 shadow-md">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[#1E5E3A]/40 pb-3">
+                    <div>
+                      <h4 className="font-bold text-base text-white">{inq.name}</h4>
+                      <div className="flex items-center gap-3 text-xs text-emerald-300 mt-0.5">
+                        <span className="font-mono">{inq.email}</span>
+                        {inq.phone && <span>• {inq.phone}</span>}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={inq.status}
+                        onChange={(e) => handleInquiryStatus(inq.id, e.target.value as any)}
+                        className="bg-black/40 border border-[#1E5E3A] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="reviewed">Reviewed</option>
+                        <option value="resolved">Resolved</option>
+                      </select>
+
+                      <button
+                        onClick={() => handleDeleteInquiry(inq.id)}
+                        className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 transition-colors"
+                        title="Delete Inquiry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    {inq.subject && <div className="text-xs font-bold text-[#A3E635]">{inq.subject}</div>}
+                    <p className="text-xs text-slate-200 leading-relaxed bg-black/30 p-3 rounded-xl border border-white/5">
+                      {inq.message}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* PARTNERS TAB */}
+        {activeTab === 'partners' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-bold text-xl text-white">Partnership Proposals</h3>
+              <p className="text-xs text-emerald-200/70">Co-investment, outgrower union, and clean energy co-development proposals</p>
+            </div>
+
+            <div className="space-y-4">
+              {partners.map((part) => (
+                <div key={part.id} className="p-5 rounded-2xl bg-[#092416] border border-[#1E5E3A] space-y-3 shadow-md">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[#1E5E3A]/40 pb-3">
+                    <div>
+                      <h4 className="font-bold text-base text-white">{part.companyName}</h4>
+                      <div className="text-xs text-emerald-300 font-mono mt-0.5">
+                        Contact: {part.contactPerson} ({part.email}) {part.phone && `• ${part.phone}`}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={part.status}
+                        onChange={(e) => handlePartnerStatus(part.id, e.target.value as any)}
+                        className="bg-black/40 border border-[#1E5E3A] rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="reviewed">Under Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="declined">Declined</option>
+                      </select>
+
+                      <button
+                        onClick={() => handleDeletePartner(part.id)}
+                        className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 transition-colors"
+                        title="Delete Proposal"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-xs font-bold text-[#A3E635]">Type: {part.partnershipType}</div>
+                    <p className="text-xs text-slate-200 leading-relaxed bg-black/30 p-3 rounded-xl border border-white/5">
+                      {part.details}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SUBSCRIBERS TAB */}
+        {activeTab === 'subscribers' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-xl text-white">Newsletter Contacts</h3>
+                <p className="text-xs text-emerald-200/70">Active subscriber mailing network</p>
+              </div>
+
+              <button
+                onClick={() => {
+                  const csvContent = "data:text/csv;charset=utf-8," + subscribers.map(s => s.email).join("\n");
+                  const encodedUri = encodeURI(csvContent);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", encodedUri);
+                  link.setAttribute("download", "subscribers.csv");
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-[#1E5E3A] hover:bg-[#184B2E] text-[#A3E635] font-bold text-xs border border-[#A3E635]/30"
+              >
+                Export CSV
+              </button>
+            </div>
+
+            <div className="p-5 rounded-3xl bg-[#092416] border border-[#1E5E3A]">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#1E5E3A] text-emerald-200/70 uppercase text-[10px] tracking-wider">
+                      <th className="py-3 px-3">Subscriber Email</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1E5E3A]/40">
+                    {subscribers.map((sub) => (
+                      <tr key={sub.id} className="hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-3 font-mono text-white">{sub.email}</td>
+                        <td className="py-3 px-3">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                            {sub.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <button
+                            onClick={() => handleDeleteSubscriber(sub.id)}
+                            className="text-[11px] font-bold text-red-400 hover:underline"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CREATE / COMPOSER TAB */}
+        {activeTab === 'create' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-xl text-white">
+                  {editingPost ? 'Edit Article' : 'Compose New Agribusiness Article'}
+                </h3>
+                <p className="text-xs text-emerald-200/70">
+                  Rich formatting & direct InsForge Database sync
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setEditingPost(null);
+                  setActiveTab('all_posts');
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <RichBlogEditor
+              initialTitle={editingPost?.title}
+              initialSummary={editingPost?.excerpt}
+              initialContent={editingPost?.content}
+              initialCategory={editingPost?.category}
+              initialCoverImage={editingPost?.imageUrl}
+              initialIsPublished={editingPost?.status === 'published'}
+              onSave={handleSavePost}
+            />
+          </div>
+        )}
+
       </div>
     </div>
   );
 };
-

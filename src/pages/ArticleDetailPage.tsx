@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Calendar, User, Heart, Share2, Sparkles, Clock, Globe, ShieldCheck } from 'lucide-react';
 import { NEWS_DATA } from '../data/companyData';
-import { getPublishedBlogPosts, BlogPostData, incrementBlogPostLike } from '../lib/firebase';
+import { getPublishedBlogPosts, BlogPostData, incrementBlogPostLike } from '../lib/insforge';
 
 interface Props {
   slug: string;
@@ -32,7 +32,7 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
         const found = posts.find((p) => p.slug === slug || p.id === slug);
         if (found) {
           setFirestorePost(found);
-          setLikes(found.likesCount || 0);
+          setLikes(found.likes || 0);
         } else {
           // Fallback to first article if missing
           setNewsArticle(NEWS_DATA[0]);

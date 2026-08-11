@@ -65,19 +65,19 @@ export const FarmDetailPage: React.FC<FarmDetailPageProps> = ({ slug, onNavigate
               <div className="p-6 rounded-2xl bg-white border border-[#1E5E3A]/20 shadow-lg space-y-4">
                 <h4 className="font-bold text-sm uppercase tracking-wider text-[#1E5E3A]">Estate Specifications</h4>
                 <div className="space-y-3 text-xs divide-y divide-slate-100">
-                  <div className="flex justify-between pt-2">
+                  <div className="flex flex-col sm:flex-row sm:justify-between pt-2 gap-1 sm:gap-2">
                     <span className="text-slate-500 font-semibold">Total Acreage:</span>
                     <span className="font-bold text-[#0B2B1B]">{farm.sizeAcres} Acres</span>
                   </div>
-                  <div className="flex justify-between pt-2">
+                  <div className="flex flex-col sm:flex-row sm:justify-between pt-2 gap-1 sm:gap-2">
                     <span className="text-slate-500 font-semibold">District:</span>
                     <span className="font-bold text-[#0B2B1B]">{farm.district}</span>
                   </div>
-                  <div className="flex justify-between pt-2">
+                  <div className="flex flex-col sm:flex-row sm:justify-between pt-2 gap-1 sm:gap-2">
                     <span className="text-slate-500 font-semibold">Water Source:</span>
                     <span className="font-bold text-[#0B2B1B]">{farm.irrigationSource}</span>
                   </div>
-                  <div className="flex justify-between pt-2">
+                  <div className="flex flex-col sm:flex-row sm:justify-between pt-2 gap-1 sm:gap-2">
                     <span className="text-slate-500 font-semibold">Primary Output:</span>
                     <span className="font-bold text-[#1E5E3A]">{farm.mainCrops.join(', ')}</span>
                   </div>

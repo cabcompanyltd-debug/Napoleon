@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Package, CheckCircle2, Send, MessageSquare } from 'lucide-react';
 import { PRODUCTS_DATA } from '../data/companyData';
-import { submitContactInquiry } from '../lib/firebase';
+import { submitContactInquiry } from '../lib/insforge';
 
 interface ProductDetailPageProps {
   slug: string;
@@ -23,10 +23,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug, onNa
     setIsSubmitting(true);
     try {
       await submitContactInquiry({
-        fullName,
+        name: fullName,
         email,
-        inquiryType: 'Product Order Inquiry',
-        subject: `Inquiry for ${product.name} (${quantity})`,
+        subject: `Product Order Inquiry: ${product.name} (${quantity})`,
         message: `Quantity requested: ${quantity}. Note: ${message}`
       });
       setSubmitted(true);
@@ -90,13 +89,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug, onNa
               <div className="p-6 rounded-2xl bg-white border border-[#1E5E3A]/20 shadow-lg space-y-4">
                 <h4 className="font-bold text-sm uppercase tracking-wider text-[#1E5E3A]">Packaging & Harvest Schedule</h4>
                 <div className="space-y-3 text-xs divide-y divide-slate-100">
-                  <div className="flex justify-between pt-2">
+                  <div className="flex flex-col sm:flex-row sm:justify-between pt-2 gap-1 sm:gap-2">
                     <span className="text-slate-500 font-semibold">Min Order Quantity:</span>
-                    <span className="font-bold text-[#0B2B1B]">{product.minOrderQuantity}</span>
+                    <span className="font-bold text-[#0B2B1B] text-sm">{product.minOrderQuantity}</span>
                   </div>
-                  <div className="flex justify-between pt-2">
+                  <div className="flex flex-col sm:flex-row sm:justify-between pt-2 gap-1 sm:gap-2">
                     <span className="text-slate-500 font-semibold">Harvest Availability:</span>
-                    <span className="font-bold text-[#1E5E3A]">{product.harvestSeason}</span>
+                    <span className="font-bold text-[#1E5E3A] text-sm">{product.harvestSeason}</span>
                   </div>
                   <div className="pt-2">
                     <span className="text-slate-500 font-semibold block mb-1">Packaging Options:</span>

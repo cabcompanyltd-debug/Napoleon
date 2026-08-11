@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth, handleRedirectAuthResult } from './lib/firebase';
+import { UserProfile, getStoredAuthUser } from './lib/insforge';
 import { Preloader } from './components/animations/Preloader';
 import { ScrollProgress } from './components/layout/ScrollProgress';
 import { CustomCursor } from './components/layout/CustomCursor';
@@ -47,16 +46,19 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getStoredAuthUser());
 
   useEffect(() => {
-    // Process redirect sign-in if returning from OAuth redirect
-    handleRedirectAuthResult().catch(console.error);
+    const handleAuthChange = () => {
+      setCurrentUser(getStoredAuthUser());
+    };
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribe();
+    window.addEventListener('auth-state-changed', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('auth-state-changed', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
   }, []);
 
   // Sync route on popstate (browser back/forward)
@@ -222,6 +224,7 @@ export default function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         currentUser={currentUser}
+        onNavigate={navigate}
       />
 
       {/* SEARCH OVERLAY */}
