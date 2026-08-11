@@ -46,9 +46,9 @@ export const About: React.FC<AboutProps> = ({ onNavigate }) => {
 
   const leadershipTeam = [
     {
-      name: 'Dr. Kwame Mensah',
-      role: 'Chief Executive Officer',
-      bio: '20+ years leading large-scale agricultural enterprises and agribusiness transformations across West Africa.',
+      name: 'Julian Tsikata',
+      role: 'Founder & Chief Executive Officer',
+      bio: 'Visionary founder and CEO driving commercial scale, modern agricultural technology, and sustainable agribusiness expansion across Volta Region and Ghana.',
       image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600'
     },
     {

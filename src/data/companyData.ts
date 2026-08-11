@@ -3,8 +3,9 @@ import { Farm, Product, Project, NewsArticle, Service, JobPosition, GalleryItem,
 export const COMPANY_INFO = {
   name: 'Napoleon Steadings Ltd.',
   shortName: 'Napoleon Steadings',
+  founderCeo: 'Julian Tsikata',
   tagline: 'Growing Today. Building Tomorrow.',
-  subtitle: 'Modern agricultural enterprise rooted in Volta Region, Ghana, with a vision for sustainable growth and global impact.',
+  subtitle: 'Modern agricultural enterprise rooted in Volta Region, Ghana, with a vision for sustainable growth and global impact under the leadership of Founder & CEO Julian Tsikata.',
   headquarters: {
     address: 'No. 1 Street, Barracks New Town',
     city: 'Ho',
@@ -322,7 +323,7 @@ export const NEWS_DATA: NewsArticle[] = [
     content: [
       'HO, VOLTA REGION — Napoleon Steadings Ltd., a leading Ghanaian agricultural enterprise, officially commissioned its upgraded operational headquarters and commercial grain storage complex in Ho.',
       'The modern facility serves as the command center for over 3,500 acres of commercial crop estates, livestock ranches, and fruit orchards spanning the Volta Region.',
-      '"Our vision is to demonstrate that modern technology, commercial scale, and deep respect for African soil can transform the agricultural landscape," stated the executive leadership during the unveiling ceremony.',
+      '"Our vision is to demonstrate that modern technology, commercial scale, and deep respect for African soil can transform the agricultural landscape," stated Founder & CEO Julian Tsikata during the unveiling ceremony.',
       'The facility integrates automated grain testing labs, tractor maintenance bays, and digital farm management software linked directly to field agronomists.'
     ],
     image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=1000',
