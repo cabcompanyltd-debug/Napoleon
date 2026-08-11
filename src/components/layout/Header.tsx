@@ -67,8 +67,14 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center justify-center transition-transform group-hover:scale-105 py-1">
             <img
               src={logoImg}
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                if (!target.src.endsWith('/logo.png')) {
+                  target.src = '/logo.png';
+                }
+              }}
               alt="Napoleon Steadings"
-              className="h-10 sm:h-12 w-auto object-contain drop-shadow-md"
+              className="h-14 sm:h-16 md:h-18 w-auto object-contain filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-all duration-300"
             />
           </div>
         </button>

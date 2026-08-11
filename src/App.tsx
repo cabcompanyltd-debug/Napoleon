@@ -178,13 +178,13 @@ export default function App() {
       return <FaqPage onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/legal/privacy') {
+    if (currentRoute === '/legal/privacy' || currentRoute === '/privacy') {
       return <LegalPages type="privacy" onNavigate={navigate} />;
     }
-    if (currentRoute === '/legal/terms') {
+    if (currentRoute === '/legal/terms' || currentRoute === '/terms') {
       return <LegalPages type="terms" onNavigate={navigate} />;
     }
-    if (currentRoute === '/legal/cookies') {
+    if (currentRoute === '/legal/cookies' || currentRoute === '/cookies') {
       return <LegalPages type="cookies" onNavigate={navigate} />;
     }
 

@@ -91,8 +91,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div className="flex items-center gap-3">
               <img
                 src={logoImg}
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  if (!target.src.endsWith('/logo.png')) {
+                    target.src = '/logo.png';
+                  }
+                }}
                 alt="Napoleon Steadings Ltd."
-                className="h-10 sm:h-12 w-auto object-contain drop-shadow-md"
+                className="h-14 sm:h-18 md:h-20 w-auto object-contain filter drop-shadow-md"
               />
             </div>
 
