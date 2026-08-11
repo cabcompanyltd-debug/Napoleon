@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { UserProfile, getStoredAuthUser } from './lib/insforge';
 import { Preloader } from './components/animations/Preloader';
 import { ScrollProgress } from './components/layout/ScrollProgress';
@@ -242,6 +243,9 @@ export default function App() {
 
       {/* BACK TO TOP */}
       <BackToTop />
+
+      {/* VERCEL WEB ANALYTICS */}
+      <Analytics />
     </div>
   );
 }
