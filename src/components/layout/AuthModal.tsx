@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, UserCheck, ShieldAlert, LayoutDashboard, Shield, LogIn, Sparkles, LogOut, Lock, Mail, User as UserIcon } from 'lucide-react';
 import { UserProfile, mockLoginAsAdmin, mockLoginAsUser, logoutUser, setStoredAuthUser } from '../../lib/insforge';
-import logoImg from '../../assets/logo.png';
+import { BrandLogo } from './BrandLogo';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -97,17 +97,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
           {/* Logo & Title */}
           <div className="flex flex-col items-center text-center">
             <div className="mb-3 inline-flex items-center justify-center">
-              <img
-                src={logoImg}
-                onError={(e) => {
-                  const target = e.currentTarget as HTMLImageElement;
-                  if (!target.src.endsWith('/logo.png')) {
-                    target.src = '/logo.png';
-                  }
-                }}
-                alt="Napoleon Steadings"
-                className="h-12 sm:h-16 w-auto object-contain drop-shadow-md"
-              />
+              <BrandLogo size="md" />
             </div>
 
             <h3 className="font-editorial text-2xl font-bold text-white">

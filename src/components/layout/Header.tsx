@@ -3,7 +3,7 @@ import { Search, User, Menu, ChevronDown, Phone, ShieldCheck, PenTool, FolderKan
 import { motion, AnimatePresence } from 'motion/react';
 import { MegaMenu } from './MegaMenu';
 import { UserProfile } from '../../lib/insforge';
-import logoImg from '../../assets/logo.png';
+import { BrandLogo } from './BrandLogo';
 
 interface HeaderProps {
   currentRoute: string;
@@ -64,19 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex items-center group text-left focus:outline-none shrink-0"
           aria-label="Napoleon Steadings - Home"
         >
-          <div className="flex items-center justify-center transition-transform group-hover:scale-105 py-1">
-            <img
-              src={logoImg}
-              onError={(e) => {
-                const target = e.currentTarget as HTMLImageElement;
-                if (!target.src.endsWith('/logo.png')) {
-                  target.src = '/logo.png';
-                }
-              }}
-              alt="Napoleon Steadings"
-              className="h-14 sm:h-16 md:h-18 w-auto object-contain filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-all duration-300"
-            />
-          </div>
+          <BrandLogo size="md" />
         </button>
 
         {/* Desktop Nav Items - Clean & Spacious Submenus */}
