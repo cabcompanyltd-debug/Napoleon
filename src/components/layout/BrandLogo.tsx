@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logoImg from '../../assets/logo.png';
 
 export const NEW_LOGO_URL = 'https://82qu5ey7.us-east.insforge.app/788db57f-1cc3-4575-a74f-fc44c1a2ec6d';
 export const NEW_FAVICON_URL = 'https://82qu5ey7.us-east.insforge.app/52bdc0b2-33f7-42d3-a870-868ed6e6ff62';
@@ -15,7 +16,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   className = '',
   onClick
 }) => {
-  const [imgSrc, setImgSrc] = useState<string>(NEW_LOGO_URL);
+  const [imgSrc, setImgSrc] = useState<string>(logoImg);
 
   const heightClasses = {
     sm: 'h-8 sm:h-10',
