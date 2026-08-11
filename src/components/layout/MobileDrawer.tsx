@@ -132,10 +132,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           <div className="p-5 border-b border-[#1E5E3A]/40 flex items-center justify-between bg-[#062114] sticky top-0 z-20">
             <div className="flex items-center justify-center">
               <img
-                src="/logo.png"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = logoImg;
-                }}
+                src={logoImg}
                 alt="Napoleon Steadings"
                 className="h-8 sm:h-9 w-auto object-contain drop-shadow-md"
               />

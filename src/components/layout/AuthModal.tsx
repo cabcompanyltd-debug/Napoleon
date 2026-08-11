@@ -98,10 +98,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
           <div className="flex flex-col items-center text-center">
             <div className="mb-3 inline-flex items-center justify-center">
               <img
-                src="/logo.png"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = logoImg;
-                }}
+                src={logoImg}
                 alt="Napoleon Steadings"
                 className="h-10 sm:h-12 w-auto object-contain drop-shadow-md"
               />

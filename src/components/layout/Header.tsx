@@ -53,8 +53,8 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
         isScrolled
-          ? 'bg-slanted-dual backdrop-blur-xl border-b border-[#A3E635]/30 py-2.5 shadow-2xl'
-          : 'bg-gradient-to-r from-[#071D12]/95 via-[#0A291A]/90 to-[#0B1F17]/95 backdrop-blur-md py-4 border-b border-[#1E5E3A]/30'
+          ? 'bg-[#061A10]/95 backdrop-blur-xl border-b border-[#A3E635]/30 py-2.5 shadow-2xl'
+          : 'bg-slanted-dual backdrop-blur-md py-3.5 border-b border-[#1E5E3A]/40'
       }`}
     >
       {/* Decorative Diagonal Seam Highlight Line */}
@@ -69,10 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <div className="flex items-center justify-center transition-transform group-hover:scale-105 py-1">
             <img
-              src="/logo.png"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = logoImg;
-              }}
+              src={logoImg}
               alt="Napoleon Steadings"
               className="h-10 sm:h-12 w-auto object-contain drop-shadow-md"
             />
