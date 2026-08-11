@@ -99,113 +99,115 @@ export default function App() {
   };
 
   const renderPage = () => {
-    // Exact route matching & parameterized slug matching
-    if (currentRoute === '/' || currentRoute === '') {
+    // Exact route matching & parameterized slug matching using clean basePath
+    const basePath = currentRoute.split('?')[0].split('#')[0];
+
+    if (basePath === '/' || basePath === '') {
       return <Home onNavigate={navigate} />;
     }
 
-    if (currentRoute.startsWith('/about')) {
+    if (basePath.startsWith('/about')) {
       return <About onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/agriculture') {
+    if (basePath === '/agriculture') {
       return <AgricultureOverview onNavigate={navigate} />;
     }
-    if (currentRoute === '/agriculture/crops') {
+    if (basePath === '/agriculture/crops') {
       return <CropsPage onNavigate={navigate} />;
     }
-    if (currentRoute === '/agriculture/livestock') {
+    if (basePath === '/agriculture/livestock') {
       return <LivestockPage onNavigate={navigate} />;
     }
-    if (currentRoute === '/agriculture/horticulture') {
+    if (basePath === '/agriculture/horticulture') {
       return <HorticulturePage onNavigate={navigate} />;
     }
-    if (currentRoute === '/agriculture/processing') {
+    if (basePath === '/agriculture/processing') {
       return <AgroProcessingPage onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/operations') {
+    if (basePath === '/operations') {
       return <OperationsPage onNavigate={navigate} />;
     }
-    if (currentRoute === '/operations/farms') {
+    if (basePath === '/operations/farms') {
       return <FarmsPage onNavigate={navigate} />;
     }
-    if (currentRoute.startsWith('/operations/farms/')) {
-      const slug = currentRoute.replace('/operations/farms/', '');
+    if (basePath.startsWith('/operations/farms/')) {
+      const slug = basePath.replace('/operations/farms/', '');
       return <FarmDetailPage slug={slug} onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/products') {
+    if (basePath === '/products') {
       return <ProductsPage onNavigate={navigate} />;
     }
-    if (currentRoute.startsWith('/products/')) {
-      const slug = currentRoute.replace('/products/', '');
+    if (basePath.startsWith('/products/')) {
+      const slug = basePath.replace('/products/', '');
       return <ProductDetailPage slug={slug} onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/services') {
+    if (basePath === '/services') {
       return <ServicesPage onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/technology') {
+    if (basePath === '/technology') {
       return <TechnologyPage onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/sustainability') {
+    if (basePath === '/sustainability') {
       return <SustainabilityPage onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/african-agriculture') {
+    if (basePath === '/african-agriculture') {
       return <AfricanAgriculturePage onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/projects') {
+    if (basePath === '/projects') {
       return <ProjectsPage onNavigate={navigate} />;
     }
-    if (currentRoute.startsWith('/projects/')) {
-      const slug = currentRoute.replace('/projects/', '');
+    if (basePath.startsWith('/projects/')) {
+      const slug = basePath.replace('/projects/', '');
       return <ProjectDetailPage slug={slug} onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/gallery') {
+    if (basePath === '/gallery') {
       return <GalleryPage />;
     }
 
-    if (currentRoute === '/insights' || currentRoute === '/blog') {
+    if (basePath === '/insights' || basePath === '/blog') {
       return <InsightsPage onNavigate={navigate} onOpenAuth={() => setIsAuthModalOpen(true)} currentUser={currentUser} />;
     }
-    if (currentRoute.startsWith('/insights/') || currentRoute.startsWith('/blog/')) {
-      const slug = currentRoute.replace(/^\/(insights|blog)\//, '');
+    if (basePath.startsWith('/insights/') || basePath.startsWith('/blog/')) {
+      const slug = basePath.replace(/^\/(insights|blog)\//, '');
       return <ArticleDetailPage slug={slug} onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/dashboard' || currentRoute === '/publish') {
+    if (basePath === '/dashboard' || basePath === '/publish') {
       return <DashboardPage currentUser={currentUser} onNavigate={navigate} onOpenAuth={() => setIsAuthModalOpen(true)} />;
     }
 
-    if (currentRoute === '/careers') {
+    if (basePath === '/careers') {
       return <CareersPage onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/partnerships' || currentRoute === '/investors') {
+    if (basePath === '/partnerships' || basePath === '/investors' || basePath === '/investment') {
       return <PartnershipsPage onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/contact') {
+    if (basePath === '/contact') {
       return <ContactPage />;
     }
 
-    if (currentRoute === '/faq') {
+    if (basePath === '/faq') {
       return <FaqPage onNavigate={navigate} />;
     }
 
-    if (currentRoute === '/legal/privacy' || currentRoute === '/privacy') {
+    if (basePath === '/legal/privacy' || basePath === '/privacy') {
       return <LegalPages type="privacy" onNavigate={navigate} />;
     }
-    if (currentRoute === '/legal/terms' || currentRoute === '/terms') {
+    if (basePath === '/legal/terms' || basePath === '/terms') {
       return <LegalPages type="terms" onNavigate={navigate} />;
     }
-    if (currentRoute === '/legal/cookies' || currentRoute === '/cookies') {
+    if (basePath === '/legal/cookies' || basePath === '/cookies') {
       return <LegalPages type="cookies" onNavigate={navigate} />;
     }
 

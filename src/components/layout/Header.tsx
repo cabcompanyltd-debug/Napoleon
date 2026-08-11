@@ -48,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
           ? 'bg-[#061A10]/95 backdrop-blur-xl border-b border-[#A3E635]/30 py-2.5 shadow-2xl'
           : 'bg-slanted-dual backdrop-blur-md py-3.5 border-b border-[#1E5E3A]/40'
@@ -58,11 +58,17 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#1E5E3A] via-[#A3E635] to-[#1E5E3A] opacity-70" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-        {/* Logo */}
+        {/* Logo - Reloads Home Page on Click */}
         <button
-          onClick={() => onNavigate('/')}
+          onClick={() => {
+            if (window.location.pathname === '/' || currentRoute === '/') {
+              window.location.reload();
+            } else {
+              onNavigate('/');
+            }
+          }}
           className="flex items-center group text-left focus:outline-none shrink-0"
-          aria-label="Napoleon Steadings - Home"
+          aria-label="Napoleon Steadings - Home (Click to reload)"
         >
           <BrandLogo size="md" />
         </button>

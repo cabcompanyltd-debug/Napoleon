@@ -57,28 +57,32 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="w-full space-y-0 bg-[#061A10] text-white pt-20">
+    <div className="w-full space-y-0 bg-[#061A10] text-white pt-20 sm:pt-24 lg:pt-24">
       {/* ANIMATED HORIZONTAL NEWS TICKER */}
-      <NewsTicker onNavigate={onNavigate} />
+      <div className="relative z-30 w-full">
+        <NewsTicker onNavigate={onNavigate} />
+      </div>
 
-      {/* HERO SECTION WITH LUXURY GRADIENT OVERLAY */}
-      <section className="relative min-h-[88vh] flex items-center justify-center overflow-hidden bg-mesh-dark">
+      {/* HERO SECTION WITH PREMIUM FULL-COVER AGRICULTURE PHOTOGRAPH */}
+      <section className="relative min-h-[88vh] flex items-center justify-center overflow-hidden bg-[#061A10]">
         {/* Ambient Glowing Orbs */}
         <div className="absolute top-1/4 left-10 w-96 h-96 bg-emerald-500/15 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-80 h-80 bg-[#A3E635]/10 rounded-full blur-[100px] pointer-events-none" />
 
-        {/* Background Image with Slow Motion Zoom */}
-        <div className="absolute inset-0 z-0 opacity-40">
+        {/* High-Resolution Modern African Agriculture Photograph */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
           <motion.img
-            src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=2000"
-            alt="Napoleon Steadings Volta Farmland"
-            initial={{ scale: 1.15 }}
+            src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=2400"
+            alt="Napoleon Steadings Commercial Agriculture Farmland Volta Region"
+            initial={{ scale: 1.1 }}
             animate={{ scale: 1 }}
-            transition={{ duration: 12, ease: 'easeOut' }}
-            className="w-full h-full object-cover object-center filter brightness-[0.7] contrast-[1.2]"
+            transition={{ duration: 10, ease: 'easeOut' }}
+            className="w-full h-full object-cover object-[center_35%] filter brightness-[0.85] contrast-[1.1]"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#061A10] via-[#0B2B1B]/70 to-[#04120B]/90" />
+          {/* Dual Balanced Gradient Overlays: Ensure crisp typography legibility while keeping the lush green farm visible */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#04140C]/90 via-[#061A10]/75 to-[#0B2B1B]/80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#061A10] via-transparent to-[#04140C]/70" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
