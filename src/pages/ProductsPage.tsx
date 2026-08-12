@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Package, Search, Filter, ArrowRight, CheckCircle2, MessageSquare, ShoppingBag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, Search, Filter, ArrowRight, CheckCircle2, MessageSquare, ShoppingBag, Loader2 } from 'lucide-react';
 import { PRODUCTS_DATA } from '../data/companyData';
+import { getProducts, ProductData } from '../lib/insforge';
 import { Reveal } from '../components/animations/Reveal';
 
 interface ProductsPageProps {
@@ -10,10 +11,32 @@ interface ProductsPageProps {
 export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate }) => {
   const [selectedCat, setSelectedCat] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [products, setProducts] = useState<ProductData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProducts() {
+      setLoading(true);
+      try {
+        const fetched = await getProducts();
+        if (fetched && fetched.length > 0) {
+          setProducts(fetched);
+        } else {
+          // Fallback to static seed array if empty
+          setProducts(PRODUCTS_DATA as any);
+        }
+      } catch (err) {
+        setProducts(PRODUCTS_DATA as any);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProducts();
+  }, []);
 
   const categories = ['All', 'Grains & Cereals', 'Fruits & Vegetables', 'Fresh Produce', 'Livestock & Poultry', 'Processed Goods', 'Seeds & Inputs'];
 
-  const filtered = PRODUCTS_DATA.filter((p) => {
+  const filtered = products.filter((p) => {
     const matchesCat = selectedCat === 'All' || p.category === selectedCat;
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.tagline.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCat && matchesSearch;

@@ -33,17 +33,22 @@ import {
   Key,
   AlertCircle,
   Copy,
-  ExternalLink
+  ExternalLink,
+  ShoppingBag
 } from 'lucide-react';
 import { 
   UserProfile,
   BlogPostData,
+  ProductData,
   ContactInquiry,
   PartnerInquiry,
   NewsletterSubscriber,
   getAllBlogPosts,
   saveBlogPost,
   deleteBlogPost,
+  getProducts,
+  saveProduct,
+  deleteProduct,
   getContactInquiries,
   updateInquiryStatus,
   deleteContactInquiry,
@@ -70,14 +75,28 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onOpenAuth
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'all_posts' | 'inquiries' | 'partners' | 'subscribers' | 'create' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'all_posts' | 'products' | 'inquiries' | 'partners' | 'subscribers' | 'create' | 'settings'>('overview');
   const [blogPosts, setBlogPosts] = useState<BlogPostData[]>([]);
+  const [productsList, setProductsList] = useState<ProductData[]>([]);
   const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
   const [partners, setPartners] = useState<PartnerInquiry[]>([]);
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPostData | null>(null);
+  
+  // Product Form State
+  const [editingProduct, setEditingProduct] = useState<ProductData | null>(null);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [prodFormName, setProdFormName] = useState('');
+  const [prodFormCategory, setProdFormCategory] = useState('Fresh Produce');
+  const [prodFormTagline, setProdFormTagline] = useState('');
+  const [prodFormDescription, setProdFormDescription] = useState('');
+  const [prodFormHarvest, setProdFormHarvest] = useState('Year-Round');
+  const [prodFormMinOrder, setProdFormMinOrder] = useState('1 Ton');
+  const [prodFormImage, setProdFormImage] = useState('');
+  const [prodFormFeatured, setProdFormFeatured] = useState(true);
+  const [isUploadingProdImage, setIsUploadingProdImage] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Gate Form State
@@ -98,6 +117,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       const posts = await getAllBlogPosts();
       setBlogPosts(posts);
 
+      const prods = await getProducts();
+      setProductsList(prods);
+
       const inq = await getContactInquiries();
       setInquiries(inq);
 
@@ -110,6 +132,87 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       console.error('Error loading InsForge dashboard data:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleOpenProductModal = (prod?: ProductData) => {
+    if (prod) {
+      setEditingProduct(prod);
+      setProdFormName(prod.name);
+      setProdFormCategory(prod.category);
+      setProdFormTagline(prod.tagline || '');
+      setProdFormDescription(prod.description || '');
+      setProdFormHarvest(prod.harvestSeason || 'Year-Round');
+      setProdFormMinOrder(prod.minOrderQuantity || '1 Ton');
+      setProdFormImage(prod.image || '');
+      setProdFormFeatured(prod.isFeatured ?? true);
+    } else {
+      setEditingProduct(null);
+      setProdFormName('');
+      setProdFormCategory('Fresh Produce');
+      setProdFormTagline('');
+      setProdFormDescription('');
+      setProdFormHarvest('Year-Round');
+      setProdFormMinOrder('1 Ton');
+      setProdFormImage('https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&q=80&w=800');
+      setProdFormFeatured(true);
+    }
+    setShowProductModal(true);
+  };
+
+  const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingProdImage(true);
+    try {
+      const res = await uploadToInsForgeStorage(file);
+      if (res.url) {
+        setProdFormImage(res.url);
+      } else {
+        alert(res.error || 'Failed to upload product image to InsForge storage');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Image upload error');
+    } finally {
+      setIsUploadingProdImage(false);
+    }
+  };
+
+  const handleSaveProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prodFormName) return;
+    setIsSubmitting(true);
+    try {
+      await saveProduct({
+        id: editingProduct ? editingProduct.id : undefined,
+        name: prodFormName,
+        category: prodFormCategory,
+        tagline: prodFormTagline,
+        description: prodFormDescription,
+        harvestSeason: prodFormHarvest,
+        minOrderQuantity: prodFormMinOrder,
+        image: prodFormImage,
+        isFeatured: prodFormFeatured,
+      });
+      setSuccessMessage(editingProduct ? 'Product specifications updated!' : 'New product created in InsForge database!');
+      setShowProductModal(false);
+      setEditingProduct(null);
+      await loadDashboardData();
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteProductItem = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this product from InsForge database?')) return;
+    try {
+      await deleteProduct(id);
+      await loadDashboardData();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -403,6 +506,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('products')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'products'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>Products ({productsList.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('inquiries')}
             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'inquiries'
@@ -639,6 +754,83 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                         onClick={() => handleDeletePost(post.id)}
                         className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 transition-colors"
                         title="Delete Article"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* PRODUCTS TAB */}
+        {activeTab === 'products' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-bold text-xl text-white">InsForge Commercial Produce & Inputs Catalog</h3>
+                <p className="text-xs text-emerald-200/70">Manage agricultural produce, grains, inputs & livestock in InsForge Database</p>
+              </div>
+              <button
+                onClick={() => handleOpenProductModal()}
+                className="px-4 py-2.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-xs flex items-center gap-2 shadow-lg"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Add New Product</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {productsList.map((prod) => (
+                <div key={prod.id} className="rounded-2xl bg-[#092416] border border-[#1E5E3A] overflow-hidden flex flex-col justify-between shadow-xl hover:border-[#A3E635]/50 transition-all">
+                  <div>
+                    <div className="relative h-48 overflow-hidden bg-black/40">
+                      <img src={prod.image} alt={prod.name} className="w-full h-full object-cover" />
+                      <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[#A3E635] text-[10px] font-bold uppercase border border-[#A3E635]/30">
+                        {prod.category}
+                      </div>
+                      {prod.isFeatured && (
+                        <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-[#A3E635] text-[#0B2B1B]">
+                          Featured
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-5 space-y-3">
+                      <h4 className="font-bold text-base text-white leading-snug">{prod.name}</h4>
+                      <p className="text-xs text-emerald-200/80 line-clamp-2">{prod.tagline}</p>
+                      
+                      <div className="pt-2 text-[11px] text-slate-300 space-y-1">
+                        <div><span className="text-emerald-400 font-bold">Min Order:</span> {prod.minOrderQuantity}</div>
+                        <div><span className="text-emerald-400 font-bold">Harvest:</span> {prod.harvestSeason}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5 pt-0 border-t border-[#1E5E3A]/40 flex items-center justify-between text-xs mt-3">
+                    <button
+                      onClick={() => onNavigate(`/products/${prod.slug}`)}
+                      className="text-[11px] font-bold text-emerald-300 hover:text-white flex items-center gap-1"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View Public Page</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenProductModal(prod)}
+                        className="p-1.5 rounded-lg bg-white/10 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] transition-colors"
+                        title="Edit Product"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteProductItem(prod.id)}
+                        className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 transition-colors"
+                        title="Delete Product"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1051,6 +1243,171 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               initialIsPublished={editingPost?.status === 'published'}
               onSave={handleSavePost}
             />
+          </div>
+        )}
+
+        {/* PRODUCT EDIT / CREATE MODAL */}
+        {showProductModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-[#0B2518] border border-[#1E5E3A] rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative my-8">
+              <div className="flex items-center justify-between border-b border-[#1E5E3A] pb-4">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-[#A3E635]" />
+                  <h3 className="font-bold text-lg text-white">
+                    {editingProduct ? 'Edit Product Specifications' : 'Add New Commercial Product'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowProductModal(false)}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveProductSubmit} className="space-y-4 text-xs">
+                <div className="space-y-1">
+                  <label className="font-bold uppercase tracking-wider text-emerald-200/80">Product Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={prodFormName}
+                    onChange={(e) => setProdFormName(e.target.value)}
+                    placeholder="e.g. Premium Golden Maize Grain"
+                    className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl px-3.5 py-2.5 text-white focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="font-bold uppercase tracking-wider text-emerald-200/80">Category</label>
+                    <select
+                      value={prodFormCategory}
+                      onChange={(e) => setProdFormCategory(e.target.value)}
+                      className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl px-3.5 py-2.5 text-white focus:outline-none"
+                    >
+                      <option value="Grains & Cereals">Grains & Cereals</option>
+                      <option value="Fruits & Vegetables">Fruits & Vegetables</option>
+                      <option value="Fresh Produce">Fresh Produce</option>
+                      <option value="Livestock & Poultry">Livestock & Poultry</option>
+                      <option value="Processed Goods">Processed Goods</option>
+                      <option value="Seeds & Inputs">Seeds & Inputs</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="font-bold uppercase tracking-wider text-emerald-200/80">Minimum Order Quantity</label>
+                    <input
+                      type="text"
+                      required
+                      value={prodFormMinOrder}
+                      onChange={(e) => setProdFormMinOrder(e.target.value)}
+                      placeholder="e.g. 5 Metric Tons"
+                      className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl px-3.5 py-2.5 text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold uppercase tracking-wider text-emerald-200/80">Tagline / Short Summary</label>
+                  <input
+                    type="text"
+                    value={prodFormTagline}
+                    onChange={(e) => setProdFormTagline(e.target.value)}
+                    placeholder="Brief description for product cards..."
+                    className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl px-3.5 py-2.5 text-white focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold uppercase tracking-wider text-emerald-200/80">Full Description & Specifications</label>
+                  <textarea
+                    rows={4}
+                    value={prodFormDescription}
+                    onChange={(e) => setProdFormDescription(e.target.value)}
+                    placeholder="Detailed agronomic specs, processing notes..."
+                    className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl px-3.5 py-2.5 text-white focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="font-bold uppercase tracking-wider text-emerald-200/80">Harvest Season / Availability</label>
+                    <input
+                      type="text"
+                      value={prodFormHarvest}
+                      onChange={(e) => setProdFormHarvest(e.target.value)}
+                      placeholder="e.g. Year-Round / July Harvest"
+                      className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl px-3.5 py-2.5 text-white focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="font-bold uppercase tracking-wider text-emerald-200/80">Featured Status</label>
+                    <div className="flex items-center gap-2 pt-2">
+                      <input
+                        type="checkbox"
+                        id="prodFeatured"
+                        checked={prodFormFeatured}
+                        onChange={(e) => setProdFormFeatured(e.target.checked)}
+                        className="w-4 h-4 accent-[#A3E635] rounded cursor-pointer"
+                      />
+                      <label htmlFor="prodFeatured" className="text-white cursor-pointer font-bold">Show in Featured Catalog</label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Image Uploader */}
+                <div className="space-y-2 pt-2 border-t border-[#1E5E3A]">
+                  <label className="font-bold uppercase tracking-wider text-emerald-200/80 block">Product Cover Image (InsForge Storage)</label>
+                  
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <input
+                      type="text"
+                      value={prodFormImage}
+                      onChange={(e) => setProdFormImage(e.target.value)}
+                      placeholder="Image URL or upload file..."
+                      className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl px-3.5 py-2.5 text-white focus:outline-none font-mono text-[11px]"
+                    />
+
+                    <label className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#1E5E3A] hover:bg-[#184B2E] text-[#A3E635] border border-[#A3E635]/30 text-xs font-bold whitespace-nowrap flex items-center gap-1.5 shadow">
+                      <UploadCloud className="w-4 h-4" />
+                      <span>{isUploadingProdImage ? 'Uploading...' : 'Upload Image'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploadingProdImage}
+                        onChange={handleProductImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {prodFormImage && (
+                    <div className="w-full h-32 rounded-xl overflow-hidden bg-black border border-[#1E5E3A]">
+                      <img src={prodFormImage} alt="Product Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1E5E3A]">
+                  <button
+                    type="button"
+                    onClick={() => setShowProductModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-2.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold shadow-lg"
+                  >
+                    {isSubmitting ? 'Saving to InsForge...' : 'Save Product'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 

@@ -66,9 +66,27 @@ export interface NewsletterSubscriber {
   subscribedAt: string;
 }
 
+export interface ProductData {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  tagline: string;
+  description: string;
+  harvestSeason: string;
+  packagingOptions: string[];
+  minOrderQuantity: string;
+  image: string;
+  galleryImages: string[];
+  nutritionalHighlights?: string[];
+  isFeatured?: boolean;
+  createdAt?: string;
+}
+
 const STORAGE_KEYS = {
   AUTH_USER: 'napoleon_auth_user',
   BLOG_POSTS: 'napoleon_blog_posts',
+  PRODUCTS: 'napoleon_products',
   CONTACT_INQUIRIES: 'napoleon_contact_inquiries',
   PARTNER_INQUIRIES: 'napoleon_partner_inquiries',
   NEWSLETTER: 'napoleon_newsletter',
@@ -786,3 +804,107 @@ export const deleteSubscriber = async (id: string) => {
   const filtered = current.filter(s => s.id !== id);
   localStorage.setItem(STORAGE_KEYS.NEWSLETTER, JSON.stringify(filtered));
 };
+
+// --- PRODUCTS API ---
+
+export const getProducts = async (): Promise<ProductData[]> => {
+  try {
+    const { data, error } = await insforge.database.from('products').select('*');
+    if (!error && data && data.length > 0) {
+      return data.map((item: any) => ({
+        id: item.id,
+        slug: item.slug,
+        name: item.name,
+        category: item.category,
+        tagline: item.tagline || '',
+        description: item.description || '',
+        harvestSeason: item.harvest_season || '',
+        packagingOptions: Array.isArray(item.packaging_options) ? item.packaging_options : [],
+        minOrderQuantity: item.min_order_quantity || '',
+        image: item.image || '',
+        galleryImages: Array.isArray(item.gallery_images) ? item.gallery_images : [],
+        nutritionalHighlights: Array.isArray(item.nutritional_highlights) ? item.nutritional_highlights : [],
+        isFeatured: Boolean(item.is_featured),
+        createdAt: item.created_at,
+      }));
+    }
+  } catch (err) {
+    console.warn('InsForge fetch products failed:', err);
+  }
+
+  const localRaw = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+  if (localRaw) {
+    return JSON.parse(localRaw);
+  }
+  return [];
+};
+
+export const getProductBySlug = async (slug: string): Promise<ProductData | null> => {
+  const products = await getProducts();
+  return products.find(p => p.slug === slug) || null;
+};
+
+export const saveProduct = async (prod: Partial<ProductData>): Promise<ProductData> => {
+  const name = prod.name || 'Untitled Product';
+  const slug = prod.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  
+  const productItem: ProductData = {
+    id: prod.id || `prod-${Date.now()}`,
+    slug,
+    name,
+    category: prod.category || 'Fresh Produce',
+    tagline: prod.tagline || '',
+    description: prod.description || '',
+    harvestSeason: prod.harvestSeason || 'Year-Round',
+    packagingOptions: prod.packagingOptions || ['Standard Commercial Packaging'],
+    minOrderQuantity: prod.minOrderQuantity || '1 Ton',
+    image: prod.image || 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&q=80&w=800',
+    galleryImages: prod.galleryImages || [prod.image || 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&q=80&w=800'],
+    nutritionalHighlights: prod.nutritionalHighlights || [],
+    isFeatured: prod.isFeatured ?? true,
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    await insforge.database.from('products').upsert([{
+      id: productItem.id,
+      slug: productItem.slug,
+      name: productItem.name,
+      category: productItem.category,
+      tagline: productItem.tagline,
+      description: productItem.description,
+      harvest_season: productItem.harvestSeason,
+      packaging_options: productItem.packagingOptions,
+      min_order_quantity: productItem.minOrderQuantity,
+      image: productItem.image,
+      gallery_images: productItem.galleryImages,
+      nutritional_highlights: productItem.nutritionalHighlights,
+      is_featured: productItem.isFeatured,
+    }]);
+  } catch (err) {
+    console.warn('InsForge upsert product failed:', err);
+  }
+
+  const current = await getProducts();
+  const idx = current.findIndex(p => p.id === productItem.id);
+  if (idx >= 0) {
+    current[idx] = productItem;
+  } else {
+    current.unshift(productItem);
+  }
+  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(current));
+  return productItem;
+};
+
+export const deleteProduct = async (id: string) => {
+  try {
+    await insforge.database.from('products').delete().eq('id', id);
+  } catch (err) {
+    console.warn('InsForge delete product failed:', err);
+  }
+
+  const current = await getProducts();
+  const filtered = current.filter(p => p.id !== id);
+  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(filtered));
+};
+

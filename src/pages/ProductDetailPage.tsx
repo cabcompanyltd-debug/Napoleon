@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Package, CheckCircle2, Send, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Package, CheckCircle2, Send, MessageSquare, Loader2 } from 'lucide-react';
 import { PRODUCTS_DATA } from '../data/companyData';
-import { submitContactInquiry } from '../lib/insforge';
+import { submitContactInquiry, getProductBySlug, ProductData } from '../lib/insforge';
 
 interface ProductDetailPageProps {
   slug: string;
@@ -9,7 +9,8 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug, onNavigate }) => {
-  const product = PRODUCTS_DATA.find((p) => p.slug === slug) || PRODUCTS_DATA[0];
+  const [product, setProduct] = useState<ProductData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -17,6 +18,38 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ slug, onNa
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    async function fetchProduct() {
+      setLoading(true);
+      try {
+        const item = await getProductBySlug(slug);
+        if (item) {
+          setProduct(item);
+        } else {
+          const staticFallback = PRODUCTS_DATA.find((p) => p.slug === slug) || PRODUCTS_DATA[0];
+          setProduct(staticFallback as any);
+        }
+      } catch (err) {
+        const staticFallback = PRODUCTS_DATA.find((p) => p.slug === slug) || PRODUCTS_DATA[0];
+        setProduct(staticFallback as any);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProduct();
+  }, [slug]);
+
+  if (loading || !product) {
+    return (
+      <div className="w-full min-h-screen pt-32 pb-20 bg-[#0B2B1B] text-white flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-[#A3E635]" />
+          <span className="text-sm font-semibold">Loading product specifications...</span>
+        </div>
+      </div>
+    );
+  }
 
   const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();

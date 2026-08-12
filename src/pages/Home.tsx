@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Sprout, ArrowRight, MapPin, Tractor, ShieldCheck, Leaf, Activity, 
@@ -6,6 +6,7 @@ import {
   BarChart3, Sparkles, Compass, Wheat, Factory, Truck, Users, Droplets
 } from 'lucide-react';
 import { COMPANY_INFO, FARMS_DATA, PRODUCTS_DATA, PROJECTS_DATA, NEWS_DATA } from '../data/companyData';
+import { getProducts, ProductData } from '../lib/insforge';
 import { Reveal } from '../components/animations/Reveal';
 import { ImageReveal } from '../components/animations/ImageReveal';
 import { AnimatedHeading } from '../components/animations/AnimatedHeading';
@@ -20,6 +21,17 @@ interface HomeProps {
 
 export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   const [activeAgCategory, setActiveAgCategory] = useState<'crops' | 'livestock' | 'horticulture' | 'processing'>('crops');
+  const [featuredProducts, setFeaturedProducts] = useState<ProductData[]>(PRODUCTS_DATA as any);
+
+  useEffect(() => {
+    let isMounted = true;
+    getProducts().then((res) => {
+      if (isMounted && res && res.length > 0) {
+        setFeaturedProducts(res);
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
 
   const agCategories = {
     crops: {
@@ -570,7 +582,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {PRODUCTS_DATA.filter((p) => p.isFeatured).map((product) => (
+            {featuredProducts.filter((p) => p.isFeatured ?? true).map((product) => (
               <Reveal key={product.id} variant="fadeUp">
                 <div className="group rounded-3xl overflow-hidden bg-white border border-[#1E5E3A]/20 shadow-xl transition-all duration-300 hover:-translate-y-2 flex flex-col h-full">
                   <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
