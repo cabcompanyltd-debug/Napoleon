@@ -384,6 +384,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         content: data.content,
         category: data.category,
         imageUrl: data.coverImage,
+        tags: data.tags,
         status: data.isPublished ? 'published' : 'draft',
         author: currentUser.fullName || 'Napoleon Editorial',
         readTime: data.readTime,
@@ -1190,6 +1191,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               initialContent={editingPost?.content}
               initialCategory={editingPost?.category}
               initialCoverImage={editingPost?.imageUrl}
+              initialTags={editingPost?.tags}
               initialIsPublished={editingPost?.status === 'published'}
               onSave={handleSavePost}
             />

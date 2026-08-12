@@ -115,9 +115,17 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
 
   const handleAddTag = () => {
     if (!tagInput.trim()) return;
-    const cleanTag = tagInput.trim().replace(/^#/, '');
-    if (!tags.includes(cleanTag)) {
-      setTags([...tags, cleanTag]);
+    const newTags = tagInput
+      .split(',')
+      .map((p) => p.trim().replace(/^#/, ''))
+      .filter((p) => p.length > 0);
+
+    if (newTags.length > 0) {
+      setTags((prev) => {
+        const set = new Set(prev);
+        newTags.forEach((t) => set.add(t));
+        return Array.from(set);
+      });
     }
     setTagInput('');
   };
@@ -476,14 +484,39 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
                   <input
                     type="text"
                     value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val.includes(',')) {
+                        const parts = val.split(',');
+                        const lastPart = val.endsWith(',') ? '' : parts.pop() || '';
+                        const newTags = parts
+                          .map((p) => p.trim().replace(/^#/, ''))
+                          .filter((p) => p.length > 0);
+
+                        if (newTags.length > 0) {
+                          setTags((prev) => {
+                            const set = new Set(prev);
+                            newTags.forEach((t) => set.add(t));
+                            return Array.from(set);
+                          });
+                        }
+                        setTagInput(lastPart);
+                      } else {
+                        setTagInput(val);
+                      }
+                    }}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === 'Enter' || e.key === ',') {
                         e.preventDefault();
                         handleAddTag();
                       }
                     }}
-                    placeholder="e.g. Maize, Irrigation, Sustainable"
+                    onBlur={() => {
+                      if (tagInput.trim()) {
+                        handleAddTag();
+                      }
+                    }}
+                    placeholder="e.g. Maize, Irrigation, Sustainable (type comma to separate)"
                     className="flex-1 px-4 py-2.5 rounded-xl bg-black/40 border border-[#1E5E3A] text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#A3E635]"
                   />
                   <button

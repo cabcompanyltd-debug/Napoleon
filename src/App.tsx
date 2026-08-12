@@ -41,6 +41,14 @@ import { LegalPages } from './pages/LegalPages';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const getCleanRoute = (): string => {
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+    const articleParam = searchParams.get('article') || searchParams.get('blog') || searchParams.get('slug');
+    if (articleParam) {
+      return `/insights/${articleParam}`;
+    }
+  } catch {}
+
   const hash = window.location.hash;
   if (hash && (hash.startsWith('#/') || hash.startsWith('#'))) {
     const hashPath = hash.replace(/^#/, '');

@@ -33,6 +33,7 @@ export interface BlogPostData {
   imageUrl: string;
   likes: number;
   status: 'published' | 'draft';
+  tags?: string[];
   createdAt?: string;
 }
 
@@ -432,6 +433,7 @@ export const getPublishedBlogPosts = async (): Promise<BlogPostData[]> => {
         imageUrl: item.image_url || item.cover_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
         likes: item.likes || 0,
         status: item.status || 'published',
+        tags: Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? item.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []),
         createdAt: item.created_at || new Date().toISOString(),
         // Aliases for multi-component support
         coverImage: item.image_url || item.cover_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
@@ -494,6 +496,7 @@ export const getAllBlogPosts = async (): Promise<BlogPostData[]> => {
         imageUrl: item.image_url || item.cover_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
         likes: item.likes || 0,
         status: item.status || 'published',
+        tags: Array.isArray(item.tags) ? item.tags : (typeof item.tags === 'string' ? item.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []),
         createdAt: item.created_at || new Date().toISOString(),
         coverImage: item.image_url || item.cover_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
         summary: item.excerpt || item.summary || '',
@@ -554,6 +557,7 @@ export const saveBlogPost = async (post: Partial<BlogPostData>): Promise<BlogPos
     imageUrl: post.imageUrl || (post as any).coverImage || existing?.imageUrl || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
     likes: post.likes !== undefined ? post.likes : (existing?.likes || 0),
     status: post.status || existing?.status || 'published',
+    tags: post.tags || existing?.tags || [],
     createdAt: existing?.createdAt || new Date().toISOString(),
   };
 
@@ -571,6 +575,7 @@ export const saveBlogPost = async (post: Partial<BlogPostData>): Promise<BlogPos
       image_url: newPost.imageUrl,
       likes: newPost.likes,
       status: newPost.status,
+      tags: newPost.tags,
     }]);
   } catch (err) {
     console.warn('InsForge upsert failed:', err);

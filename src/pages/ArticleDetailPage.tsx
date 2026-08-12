@@ -14,6 +14,7 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
   const [likes, setLikes] = useState<number>(0);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
     const loadArticle = async () => {
@@ -22,7 +23,12 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
       // Check InsForge published blog posts first
       try {
         const posts = await getPublishedBlogPosts();
-        const found = posts.find((p) => p.slug === slug || p.id === slug);
+        const found = posts.find(
+          (p) =>
+            p.slug === slug ||
+            p.id === slug ||
+            (p.title && p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug)
+        );
         if (found) {
           setFirestorePost(found);
           setLikes(found.likes || 0);
@@ -34,7 +40,12 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
       }
 
       // Fallback to preset news data if not in InsForge database
-      const local = NEWS_DATA.find((n) => n.slug === slug);
+      const local = NEWS_DATA.find(
+        (n) =>
+          n.slug === slug ||
+          n.id === slug ||
+          (n.title && n.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug)
+      );
       if (local) {
         setNewsArticle(local);
       } else {
@@ -52,6 +63,34 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
     setLikes(likes + 1);
     if (firestorePost?.id) {
       await incrementBlogPostLike(firestorePost.id);
+    }
+  };
+
+  const handleShare = async () => {
+    // Generate clean shareable URL
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl.replace(/\/$/, '')}/insights/${slug}`;
+    const shareTitle = isUserPost ? firestorePost?.title : newsArticle?.title;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: summary || shareTitle,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard copy
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
     }
   };
 
@@ -140,20 +179,31 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
               </div>
             </div>
 
-            {isUserPost && (
+            <div className="flex items-center gap-2">
+              {isUserPost && (
+                <button
+                  onClick={handleLike}
+                  disabled={hasLiked}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
+                    hasLiked
+                      ? 'bg-red-500/20 text-red-400 border-red-500/40'
+                      : 'bg-black/40 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] border-white/20'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${hasLiked ? 'fill-red-400 text-red-400' : ''}`} />
+                  <span>{likes} {likes === 1 ? 'Like' : 'Likes'}</span>
+                </button>
+              )}
+
               <button
-                onClick={handleLike}
-                disabled={hasLiked}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
-                  hasLiked
-                    ? 'bg-red-500/20 text-red-400 border-red-500/40'
-                    : 'bg-black/40 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] border-white/20'
-                }`}
+                onClick={handleShare}
+                className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border bg-[#1E5E3A] hover:bg-[#287547] text-[#A3E635] border-[#A3E635]/30 transition-all shadow-md active:scale-95"
+                title="Share this independent blog URL"
               >
-                <Heart className={`w-4 h-4 ${hasLiked ? 'fill-red-400 text-red-400' : ''}`} />
-                <span>{likes} {likes === 1 ? 'Like' : 'Likes'}</span>
+                <Share2 className="w-4 h-4 text-[#A3E635]" />
+                <span>{copied ? 'Link Copied!' : 'Share Article'}</span>
               </button>
-            )}
+            </div>
           </div>
         </div>
       </section>

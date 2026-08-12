@@ -160,6 +160,16 @@ export const InsightsPage: React.FC<Props> = ({ onNavigate, onOpenAuth, currentU
                           <p className="text-xs text-emerald-100/70 line-clamp-3 mt-2 leading-relaxed">
                             {post.summary}
                           </p>
+
+                          {post.tags && post.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2.5">
+                              {post.tags.slice(0, 4).map((t) => (
+                                <span key={t} className="text-[10px] font-mono font-semibold text-[#A3E635] bg-[#1E5E3A]/50 border border-[#A3E635]/20 px-2 py-0.5 rounded-full">
+                                  #{t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-2">
