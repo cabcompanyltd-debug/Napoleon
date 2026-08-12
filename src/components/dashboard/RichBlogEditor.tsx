@@ -53,35 +53,12 @@ const CATEGORIES = [
   'Sustainability & Climate'
 ];
 
-const SUGGESTED_COVER_IMAGES = [
-  {
-    label: 'Modern Mechanized Grain Farm',
-    url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    label: 'Golden Wheat Harvest Volta',
-    url: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    label: 'Smart Irrigation Systems',
-    url: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    label: 'Livestock & Sustainable Pastures',
-    url: 'https://images.unsplash.com/photo-1545468800-85cc9bc6ecf7?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    label: 'Organic Greenhouse Cultivation',
-    url: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=1200&q=80'
-  }
-];
-
 export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
   initialTitle = '',
   initialSummary = '',
   initialContent = '',
   initialCategory = 'Agricultural Innovation',
-  initialCoverImage = SUGGESTED_COVER_IMAGES[0].url,
+  initialCoverImage = '',
   initialTags = ['GhanaAgri', 'VoltaRegion', 'Innovation'],
   initialIsPublished = true,
   onSave,
@@ -97,21 +74,20 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
   const [tags, setTags] = useState<string[]>(initialTags);
   const [isPublished, setIsPublished] = useState(initialIsPublished);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
-  const [customImageUrl, setCustomImageUrl] = useState('');
-  const [showImageModal, setShowImageModal] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingInline, setIsUploadingInline] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
 
+  const tagsJoined = (initialTags || []).join(',');
   React.useEffect(() => {
     setTitle(initialTitle);
     setSummary(initialSummary);
     setContent(initialContent);
     setCategory(initialCategory || 'Agricultural Innovation');
-    setCoverImage(initialCoverImage || SUGGESTED_COVER_IMAGES[0].url);
+    setCoverImage(initialCoverImage || '');
     setTags(initialTags && initialTags.length > 0 ? initialTags : ['GhanaAgri', 'VoltaRegion', 'Innovation']);
     setIsPublished(initialIsPublished ?? true);
-  }, [initialTitle, initialSummary, initialContent, initialCategory, initialCoverImage, initialTags, initialIsPublished]);
+  }, [initialTitle, initialSummary, initialContent, initialCategory, initialCoverImage, tagsJoined, initialIsPublished]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -165,7 +141,7 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
       summary: summary.trim() || title,
       content,
       category,
-      coverImage: coverImage || SUGGESTED_COVER_IMAGES[0].url,
+      coverImage: coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
       tags,
       isPublished,
       readTime: calculateReadTime(content)
@@ -285,34 +261,66 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
               />
             </div>
 
-            {/* Cover Image Selector */}
+            {/* Cover Image Direct Uploader */}
             <div className="space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider text-emerald-200/80 block">
-                Article Cover Banner Image
+                Article Cover Image Banner
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {SUGGESTED_COVER_IMAGES.map((img) => (
-                  <button
-                    key={img.url}
-                    type="button"
-                    onClick={() => setCoverImage(img.url)}
-                    className={`relative rounded-xl overflow-hidden border-2 h-20 text-left transition-all group ${
-                      coverImage === img.url ? 'border-[#A3E635] ring-2 ring-[#A3E635]/50 scale-105' : 'border-white/10 opacity-60 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 p-1 flex items-end">
-                      <span className="text-[9px] font-bold text-white line-clamp-1 leading-tight">{img.label}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
 
-              {/* Custom Image URL input & InsForge Storage Upload */}
-              <div className="flex flex-wrap items-center gap-2 pt-2">
-                <label className="cursor-pointer px-4 py-2 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] text-xs font-extrabold flex items-center gap-2 border border-[#A3E635]/50 transition-all shadow-md">
-                  <UploadCloud className="w-4 h-4" />
-                  <span>{isUploadingCover ? 'Uploading to InsForge...' : 'Upload Cover File (InsForge Storage)'}</span>
+              {coverImage ? (
+                <div className="relative rounded-2xl overflow-hidden border-2 border-[#1E5E3A] bg-black/60 h-48 sm:h-64 w-full group">
+                  <img src={coverImage} alt="Article Cover" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex items-end justify-between">
+                    <span className="text-xs font-bold text-white/90 bg-black/60 px-3 py-1 rounded-full border border-white/10 backdrop-blur-sm">
+                      Cover Banner Uploaded
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer px-4 py-2 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] text-xs font-extrabold flex items-center gap-1.5 shadow-lg transition-transform hover:scale-105">
+                        <UploadCloud className="w-4 h-4" />
+                        <span>{isUploadingCover ? 'Uploading...' : 'Change Cover File'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploadingCover}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setIsUploadingCover(true);
+                              const res = await uploadToInsForgeStorage(file);
+                              setIsUploadingCover(false);
+                              if (res.url) {
+                                setCoverImage(res.url);
+                                setEditorError(null);
+                              } else {
+                                setEditorError('Upload failed: ' + (res.error || 'Unknown error'));
+                              }
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => setCoverImage('')}
+                        className="px-4 py-2 rounded-xl bg-red-950/80 hover:bg-red-900 border border-red-500/50 text-red-200 text-xs font-bold transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <label className="cursor-pointer block rounded-2xl border-2 border-dashed border-[#1E5E3A] hover:border-[#A3E635] bg-black/30 hover:bg-black/50 p-8 text-center space-y-3 transition-all group">
+                  <div className="w-12 h-12 rounded-2xl bg-[#1E5E3A]/40 text-[#A3E635] flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                    <UploadCloud className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-white group-hover:text-[#A3E635] transition-colors">
+                      {isUploadingCover ? 'Uploading file to InsForge Storage...' : 'Click to select & upload cover banner image'}
+                    </p>
+                    <p className="text-[11px] text-emerald-200/60">Supports JPG, PNG, WEBP directly from device</p>
+                  </div>
                   <input
                     type="file"
                     accept="image/*"
@@ -334,27 +342,7 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
                     className="hidden"
                   />
                 </label>
-
-                <input
-                  type="url"
-                  value={customImageUrl}
-                  onChange={(e) => setCustomImageUrl(e.target.value)}
-                  placeholder="Or paste image URL (https://...)"
-                  className="flex-1 min-w-[200px] px-4 py-2 rounded-xl bg-black/40 border border-[#1E5E3A] text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#A3E635]"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (customImageUrl.trim()) {
-                      setCoverImage(customImageUrl.trim());
-                      setCustomImageUrl('');
-                    }
-                  }}
-                  className="px-4 py-2 rounded-xl bg-[#1E5E3A] hover:bg-[#287547] text-[#A3E635] text-xs font-bold border border-[#A3E635]/30"
-                >
-                  Apply URL
-                </button>
-              </div>
+              )}
             </div>
 
             {/* Rich Editor Toolbar */}
@@ -430,18 +418,10 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
                 >
                   <Quote className="w-4 h-4" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => insertFormatting('![Image Description](', ')')}
-                  className="p-2 rounded-lg bg-black/30 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] transition-colors"
-                  title="Insert Image URL"
-                >
-                  <ImageIcon className="w-4 h-4" />
-                </button>
 
-                <label className="cursor-pointer p-2 rounded-lg bg-black/30 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] transition-colors flex items-center gap-1 text-xs font-bold" title="Upload Image File to InsForge Storage">
+                <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-[#1E5E3A] hover:bg-[#287547] text-[#A3E635] border border-[#A3E635]/30 transition-colors flex items-center gap-1.5 text-xs font-bold" title="Upload Image File directly to InsForge Storage">
                   <UploadCloud className="w-4 h-4 text-[#A3E635]" />
-                  <span className="hidden sm:inline text-[10px]">{isUploadingInline ? 'Uploading...' : 'Upload Image'}</span>
+                  <span>{isUploadingInline ? 'Uploading Image...' : 'Insert Image File'}</span>
                   <input
                     type="file"
                     accept="image/*"

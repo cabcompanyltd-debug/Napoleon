@@ -260,7 +260,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     if (currentUser?.fullName) {
       setAdminNameInput(currentUser.fullName);
     }
-  }, [currentUser]);
+  }, [currentUser?.id, currentUser?.fullName]);
 
   const handleGateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1116,8 +1116,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   <button
                     onClick={async () => {
                       await updateUserProfileAvatar(currentUser?.avatarUrl, adminNameInput);
-                      setSuccessMessage('Admin profile name saved successfully!');
-                      setTimeout(() => setSuccessMessage(null), 4000);
+                      showToast('Admin profile name saved successfully!');
                     }}
                     className="w-full py-2.5 rounded-xl bg-[#1E5E3A] hover:bg-[#184B2E] text-[#A3E635] font-bold text-xs border border-[#A3E635]/30 transition-colors"
                   >
@@ -1126,92 +1125,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
               </div>
 
-              {/* InsForge Media Storage CDN Uploader */}
-              <div className="p-6 rounded-3xl bg-[#092416] border border-[#1E5E3A] space-y-6 shadow-xl flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-2xl bg-[#1E5E3A] text-[#A3E635]">
-                      <UploadCloud className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-base text-white">InsForge Media Storage Bucket</h4>
-                      <p className="text-xs text-emerald-200/70">Upload images & assets for instant public CDN URLs</p>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-emerald-200/80 leading-relaxed">
-                    Upload photos for farm products, executive bios, or blog inline images. All files are permanently hosted on the InsForge media storage network.
+              {/* Technical Infrastructure Specs Box */}
+              <div className="p-6 rounded-3xl bg-[#092416] border border-[#1E5E3A] space-y-4 shadow-xl flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-base text-white flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-[#A3E635]" />
+                    <span>InsForge System Architecture</span>
+                  </h4>
+                  <p className="text-xs text-emerald-200/70 mt-1 leading-relaxed">
+                    All image uploads across blogs, products, and user profiles are directly routed to the high-performance InsForge Storage Network.
                   </p>
-
-                  <div className="p-6 rounded-2xl border-2 border-dashed border-[#1E5E3A] bg-black/30 text-center space-y-3">
-                    <UploadCloud className="w-10 h-10 text-[#A3E635] mx-auto opacity-80" />
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold text-white">Select image file from computer</p>
-                      <p className="text-[10px] text-emerald-200/60">Supports JPG, PNG, WEBP, SVG up to 10MB</p>
-                    </div>
-
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] text-xs font-extrabold shadow-lg transition-transform hover:scale-105">
-                      <span>{isUploadingMedia ? 'Uploading File...' : 'Choose File & Upload'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={isUploadingMedia}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setIsUploadingMedia(true);
-                            const res = await uploadToInsForgeStorage(file);
-                            setIsUploadingMedia(false);
-                            if (res.url) {
-                              setUploadedMediaUrl(res.url);
-                              showToast('File uploaded to InsForge Storage!');
-                            } else {
-                              showToast('Media upload failed: ' + (res.error || 'Error'), 'error');
-                            }
-                          }
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-
-                  {uploadedMediaUrl && (
-                    <div className="p-4 rounded-2xl bg-black/60 border border-[#A3E635]/50 space-y-2 animate-fade-in">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3E635]">Public InsForge CDN Link:</span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(uploadedMediaUrl);
-                            showToast('CDN URL copied to clipboard!');
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-[#1E5E3A] text-[#A3E635] text-[10px] font-bold flex items-center gap-1"
-                        >
-                          <Copy className="w-3 h-3" />
-                          <span>Copy URL</span>
-                        </button>
-                      </div>
-                      <input
-                        type="text"
-                        readOnly
-                        value={uploadedMediaUrl}
-                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-1.5 text-[11px] font-mono text-emerald-300 focus:outline-none"
-                      />
-                      <div className="w-full h-32 rounded-xl overflow-hidden border border-white/10 bg-black">
-                        <img src={uploadedMediaUrl} alt="Uploaded preview" className="w-full h-full object-cover" />
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                {/* Technical Specs Box */}
-                <div className="p-4 rounded-2xl bg-black/40 border border-[#1E5E3A] text-xs space-y-2">
+                <div className="p-4 rounded-2xl bg-black/40 border border-[#1E5E3A] text-xs space-y-3">
                   <div className="flex items-center justify-between text-emerald-200/80 text-[11px]">
-                    <span>InsForge Host API:</span>
+                    <span>Backend Platform:</span>
+                    <span className="font-mono text-white font-bold">InsForge BaaS</span>
+                  </div>
+                  <div className="flex items-center justify-between text-emerald-200/80 text-[11px]">
+                    <span>Host Domain:</span>
                     <span className="font-mono text-white">82qu5ey7.us-east.insforge.app</span>
                   </div>
                   <div className="flex items-center justify-between text-emerald-200/80 text-[11px]">
-                    <span>Storage Bucket Name:</span>
-                    <span className="font-mono text-[#A3E635]">napoleon-media</span>
+                    <span>Active Storage Bucket:</span>
+                    <span className="font-mono text-[#A3E635] font-bold">napoleon-media</span>
                   </div>
                   <div className="flex items-center justify-between text-emerald-200/80 text-[11px]">
                     <span>Database Engine:</span>
@@ -1370,22 +1307,43 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </div>
                 </div>
 
-                {/* Product Image Uploader */}
+                {/* Product Direct Image Uploader */}
                 <div className="space-y-2 pt-2 border-t border-[#1E5E3A]">
-                  <label className="font-bold uppercase tracking-wider text-emerald-200/80 block">Product Cover Image (InsForge Storage)</label>
+                  <label className="font-bold uppercase tracking-wider text-emerald-200/80 block">Product Cover Image</label>
                   
-                  <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <input
-                      type="text"
-                      value={prodFormImage}
-                      onChange={(e) => setProdFormImage(e.target.value)}
-                      placeholder="Image URL or upload file..."
-                      className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl px-3.5 py-2.5 text-white focus:outline-none font-mono text-[11px]"
-                    />
-
-                    <label className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#1E5E3A] hover:bg-[#184B2E] text-[#A3E635] border border-[#A3E635]/30 text-xs font-bold whitespace-nowrap flex items-center gap-1.5 shadow">
-                      <UploadCloud className="w-4 h-4" />
-                      <span>{isUploadingProdImage ? 'Uploading...' : 'Upload Image'}</span>
+                  {prodFormImage ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-[#1E5E3A] bg-black h-36 w-full group">
+                      <img src={prodFormImage} alt="Product Preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/70 flex items-center justify-center gap-3">
+                        <label className="cursor-pointer px-4 py-2 rounded-xl bg-[#A3E635] text-[#0B2B1B] text-xs font-extrabold flex items-center gap-1.5 shadow hover:scale-105 transition-transform">
+                          <UploadCloud className="w-4 h-4" />
+                          <span>{isUploadingProdImage ? 'Uploading File...' : 'Change Photo'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingProdImage}
+                            onChange={handleProductImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setProdFormImage('')}
+                          className="px-4 py-2 rounded-xl bg-red-950 text-red-200 border border-red-500/40 text-xs font-bold"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer block rounded-2xl border-2 border-dashed border-[#1E5E3A] hover:border-[#A3E635] bg-black/30 p-5 text-center space-y-2 transition-colors">
+                      <UploadCloud className="w-8 h-8 text-[#A3E635] mx-auto opacity-80" />
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-bold text-white">
+                          {isUploadingProdImage ? 'Uploading photo to InsForge...' : 'Click to select & upload product photo'}
+                        </p>
+                        <p className="text-[10px] text-emerald-200/60">Uploads directly to InsForge Storage</p>
+                      </div>
                       <input
                         type="file"
                         accept="image/*"
@@ -1394,12 +1352,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                         className="hidden"
                       />
                     </label>
-                  </div>
-
-                  {prodFormImage && (
-                    <div className="w-full h-32 rounded-xl overflow-hidden bg-black border border-[#1E5E3A]">
-                      <img src={prodFormImage} alt="Product Preview" className="w-full h-full object-cover" />
-                    </div>
                   )}
                 </div>
 

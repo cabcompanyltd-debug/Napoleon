@@ -5,6 +5,11 @@ import { Sprout } from 'lucide-react';
 export const Preloader: React.FC<{ onComplete?: () => void }> = ({ onComplete }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [progress, setProgress] = useState(0);
+  const onCompleteRef = React.useRef(onComplete);
+
+  React.useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -13,7 +18,7 @@ export const Preloader: React.FC<{ onComplete?: () => void }> = ({ onComplete })
           clearInterval(timer);
           setTimeout(() => {
             setIsVisible(false);
-            if (onComplete) onComplete();
+            if (onCompleteRef.current) onCompleteRef.current();
           }, 300);
           return 100;
         }
@@ -22,7 +27,7 @@ export const Preloader: React.FC<{ onComplete?: () => void }> = ({ onComplete })
     }, 40);
 
     return () => clearInterval(timer);
-  }, [onComplete]);
+  }, []);
 
   return (
     <AnimatePresence>
