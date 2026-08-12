@@ -71,7 +71,11 @@ export default function App() {
 
   useEffect(() => {
     const handleAuthChange = () => {
-      setCurrentUser(getStoredAuthUser());
+      const user = getStoredAuthUser();
+      setCurrentUser(user);
+      if (!user) {
+        navigate('/');
+      }
     };
 
     window.addEventListener('auth-state-changed', handleAuthChange);

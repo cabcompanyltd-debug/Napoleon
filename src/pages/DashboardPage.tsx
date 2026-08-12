@@ -479,7 +479,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </button>
 
             <button
-              onClick={() => logoutUser()}
+              onClick={() => {
+                logoutUser();
+                onNavigate('/');
+              }}
               className="p-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 transition-colors"
               title="Sign Out"
             >

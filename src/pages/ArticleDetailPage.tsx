@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Calendar, User, Heart, Share2, Sparkles, Clock, Globe, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Heart, Share2, Sparkles, Clock, Globe, ShieldCheck, Copy, Check, MessageCircle, Send, Mail } from 'lucide-react';
 import { NEWS_DATA } from '../data/companyData';
 import { getPublishedBlogPosts, BlogPostData, incrementBlogPostLike } from '../lib/insforge';
 
@@ -7,6 +7,14 @@ interface Props {
   slug: string;
   onNavigate: (route: string) => void;
 }
+
+const cleanSummary = (text?: string): string => {
+  if (!text) return '';
+  if (text.toLowerCase().includes('testing upsert') || text.toLowerCase().includes('updated excerpt')) {
+    return '';
+  }
+  return text.trim();
+};
 
 export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
   const [firestorePost, setFirestorePost] = useState<BlogPostData | null>(null);
@@ -57,6 +65,53 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
     loadArticle();
   }, [slug]);
 
+  const isUserPost = !!firestorePost;
+  const title = isUserPost ? firestorePost?.title : newsArticle?.title;
+  const category = isUserPost ? firestorePost?.category : newsArticle?.category;
+  const date = isUserPost 
+    ? (firestorePost?.date || (firestorePost?.publishedAt ? (isNaN(Date.parse(firestorePost.publishedAt)) ? firestorePost.publishedAt : new Date(firestorePost.publishedAt).toLocaleDateString()) : 'Recent')) 
+    : newsArticle?.date;
+  const readTime = isUserPost ? firestorePost?.readTime : newsArticle?.readTime;
+  const coverImage = isUserPost ? firestorePost?.coverImage : newsArticle?.image;
+  const authorName = isUserPost ? firestorePost?.authorName : newsArticle?.author;
+  const authorRole = isUserPost ? 'Verified Community Author' : newsArticle?.authorRole;
+  const authorPhoto = isUserPost ? firestorePost?.authorPhoto : null;
+  const rawSummary = isUserPost ? firestorePost?.summary : newsArticle?.summary;
+  const summary = cleanSummary(rawSummary);
+
+  const cleanShareUrl = `${window.location.origin}/insights/${slug}`;
+
+  // Update document title and Open Graph social card meta tags dynamically
+  useEffect(() => {
+    if (isLoading || !title) return;
+
+    document.title = `${title} | Napoleon Steadings Ltd.`;
+
+    const metaSummary = summary || `${title} — Agricultural Insights by Napoleon Steadings Ltd., Volta Region, Ghana.`;
+    const metaCover = coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80';
+
+    const setOrUpdateMeta = (attr: 'name' | 'property', nameVal: string, contentVal: string) => {
+      let el = document.querySelector(`meta[${attr}="${nameVal}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, nameVal);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', contentVal);
+    };
+
+    setOrUpdateMeta('name', 'description', metaSummary);
+    setOrUpdateMeta('property', 'og:title', title);
+    setOrUpdateMeta('property', 'og:description', metaSummary);
+    setOrUpdateMeta('property', 'og:image', metaCover);
+    setOrUpdateMeta('property', 'og:url', cleanShareUrl);
+    setOrUpdateMeta('property', 'og:type', 'article');
+    setOrUpdateMeta('name', 'twitter:card', 'summary_large_image');
+    setOrUpdateMeta('name', 'twitter:title', title);
+    setOrUpdateMeta('name', 'twitter:description', metaSummary);
+    setOrUpdateMeta('name', 'twitter:image', metaCover);
+  }, [isLoading, title, summary, coverImage, cleanShareUrl]);
+
   const handleLike = async () => {
     if (hasLiked) return;
     setHasLiked(true);
@@ -67,26 +122,24 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
   };
 
   const handleShare = async () => {
-    // Generate clean shareable URL
-    const baseUrl = window.location.origin + window.location.pathname;
-    const shareUrl = `${baseUrl.replace(/\/$/, '')}/insights/${slug}`;
-    const shareTitle = isUserPost ? firestorePost?.title : newsArticle?.title;
+    const shareTitle = title || 'Napoleon Steadings Insights';
+    const shareText = summary ? `${shareTitle} — ${summary}` : shareTitle;
 
     if (navigator.share) {
       try {
         await navigator.share({
           title: shareTitle,
-          text: summary || shareTitle,
-          url: shareUrl,
+          text: shareText,
+          url: cleanShareUrl,
         });
         return;
       } catch {
-        // Fallback to clipboard copy
+        // Fallback to clipboard
       }
     }
 
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(cleanShareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     } catch (err) {
@@ -94,26 +147,15 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="w-full pt-32 pb-24 bg-[#071910] text-white text-center font-mono text-xs min-h-screen">
-        Loading Insight Article...
-      </div>
-    );
-  }
-
-  const isUserPost = !!firestorePost;
-  const title = isUserPost ? firestorePost.title : newsArticle?.title;
-  const category = isUserPost ? firestorePost.category : newsArticle?.category;
-  const date = isUserPost 
-    ? (firestorePost.date || (firestorePost.publishedAt ? (isNaN(Date.parse(firestorePost.publishedAt)) ? firestorePost.publishedAt : new Date(firestorePost.publishedAt).toLocaleDateString()) : 'Recent')) 
-    : newsArticle?.date;
-  const readTime = isUserPost ? firestorePost.readTime : newsArticle?.readTime;
-  const coverImage = isUserPost ? firestorePost.coverImage : newsArticle?.image;
-  const authorName = isUserPost ? firestorePost.authorName : newsArticle?.author;
-  const authorRole = isUserPost ? 'Verified Community Author' : newsArticle?.authorRole;
-  const authorPhoto = isUserPost ? firestorePost.authorPhoto : null;
-  const summary = isUserPost ? firestorePost.summary : newsArticle?.summary;
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(cleanShareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
 
   // Format content for user posts vs preset news
   const formatContentHtml = (raw: string) => {
@@ -231,7 +273,7 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
           )}
 
           {/* Tags */}
-          {isUserPost && firestorePost.tags && firestorePost.tags.length > 0 && (
+          {isUserPost && firestorePost?.tags && firestorePost.tags.length > 0 && (
             <div className="pt-8 border-t border-white/10 flex flex-wrap gap-2">
               {firestorePost.tags.map((t) => (
                 <span key={t} className="px-3 py-1 rounded-full bg-[#1E5E3A]/50 border border-[#A3E635]/30 text-[#A3E635] text-xs font-semibold">
@@ -240,6 +282,79 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
               ))}
             </div>
           )}
+
+          {/* Dedicated Social Share Bar */}
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-[#0B2B1B] via-[#1E5E3A]/60 to-[#0B2B1B] border border-[#A3E635]/30 shadow-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                  <Share2 className="w-4 h-4 text-[#A3E635]" />
+                  <span>Share This Article</span>
+                </h4>
+                <p className="text-xs text-emerald-200/80 mt-0.5">
+                  Spread organic agriculture insights across social platforms with clean links and cover previews.
+                </p>
+              </div>
+
+              <button
+                onClick={copyToClipboard}
+                className="px-3.5 py-2 rounded-xl bg-black/50 hover:bg-[#1E5E3A] border border-[#A3E635]/40 text-[#A3E635] text-xs font-bold flex items-center justify-center gap-2 transition-all"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-[#A3E635]" />}
+                <span>{copied ? 'Copied Clean Link' : 'Copy Link'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-white/10">
+              <a
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${title || ''}\n${cleanShareUrl}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/40 text-[#25D366] text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
+              </a>
+
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title || '')}&url=${encodeURIComponent(cleanShareUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>X / Twitter</span>
+              </a>
+
+              <a
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(cleanShareUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-400/40 text-blue-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>LinkedIn</span>
+              </a>
+
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(cleanShareUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-400/40 text-indigo-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Facebook</span>
+              </a>
+
+              <a
+                href={`mailto:?subject=${encodeURIComponent(title || '')}&body=${encodeURIComponent(`${title || ''}\n\nRead article: ${cleanShareUrl}`)}`}
+                className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-400/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Email</span>
+              </a>
+            </div>
+          </div>
         </div>
       </section>
     </div>
