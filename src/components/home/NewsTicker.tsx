@@ -62,35 +62,46 @@ const TICKER_ITEMS: TickerItem[] = [
 ];
 
 export const NewsTicker: React.FC<NewsTickerProps> = ({ onNavigate }) => {
-  const [isPaused, setIsPaused] = useState(false);
+  const [isManualPaused, setIsManualPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const isEffectivePaused = isManualPaused || isHovered;
+
+  const togglePause = () => {
+    if (isManualPaused) {
+      setIsManualPaused(false);
+      setIsHovered(false);
+    } else {
+      setIsManualPaused(true);
+    }
+  };
 
   return (
     <div className="w-full bg-[#04140C] border-b border-[#A3E635]/25 text-white py-2.5 px-3 sm:px-6 relative overflow-hidden select-none z-30 shadow-md">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         {/* Live Badge */}
         <div className="shrink-0 flex items-center gap-2 bg-[#0B2B1B] border border-[#A3E635]/40 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold text-[#A3E635] shadow-sm">
-          <Radio className="w-3 h-3 text-[#A3E635] animate-pulse" />
-          <span className="hidden sm:inline">AGRI-NEWS TICKER</span>
-          <span className="sm:hidden">LIVE</span>
+          <Radio className={`w-3 h-3 text-[#A3E635] ${isEffectivePaused ? 'opacity-40' : 'animate-pulse'}`} />
+          <span className="hidden sm:inline">{isEffectivePaused ? 'TICKER PAUSED' : 'AGRI-NEWS TICKER'}</span>
+          <span className="sm:hidden">{isEffectivePaused ? 'PAUSED' : 'LIVE'}</span>
         </div>
 
         {/* Scrolling Marquee Container */}
         <div 
           className="flex-1 overflow-hidden relative"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
         >
           {/* Gradient Edge Masks */}
           <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#04140C] to-transparent z-10 pointer-events-none" />
           <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#04140C] to-transparent z-10 pointer-events-none" />
 
           <div 
-            className={`flex items-center gap-8 whitespace-nowrap text-xs ${
-              isPaused ? '[animation-play-state:paused]' : ''
-            }`}
+            className="flex items-center gap-8 whitespace-nowrap text-xs"
             style={{
               display: 'inline-flex',
-              animation: 'marquee 38s linear infinite'
+              animation: 'marquee 38s linear infinite',
+              animationPlayState: isEffectivePaused ? 'paused' : 'running'
             }}
           >
             {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, index) => (
@@ -115,12 +126,22 @@ export const NewsTicker: React.FC<NewsTickerProps> = ({ onNavigate }) => {
 
         {/* Control Button */}
         <button
-          onClick={() => setIsPaused(!isPaused)}
-          aria-label={isPaused ? 'Resume news ticker' : 'Pause news ticker'}
-          className="shrink-0 p-1.5 rounded-lg bg-[#0B2B1B] hover:bg-[#1E5E3A] border border-[#A3E635]/30 text-emerald-300 transition-colors"
-          title={isPaused ? 'Resume marquee' : 'Pause marquee'}
+          onClick={togglePause}
+          aria-label={isManualPaused ? 'Resume news ticker' : 'Pause news ticker'}
+          className="shrink-0 p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-[#0B2B1B] hover:bg-[#1E5E3A] border border-[#A3E635]/30 text-emerald-300 hover:text-[#A3E635] transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+          title={isManualPaused ? 'Play news ticker' : 'Pause news ticker'}
         >
-          {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+          {isManualPaused ? (
+            <>
+              <Play className="w-3.5 h-3.5 fill-[#A3E635] text-[#A3E635]" />
+              <span className="hidden md:inline text-[10px] font-mono font-bold text-[#A3E635]">PLAY</span>
+            </>
+          ) : (
+            <>
+              <Pause className="w-3.5 h-3.5 text-emerald-300" />
+              <span className="hidden md:inline text-[10px] font-mono font-bold text-emerald-300">PAUSE</span>
+            </>
+          )}
         </button>
       </div>
 
