@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { uploadToInsForgeStorage } from '../../lib/insforge';
 import { 
   Bold, 
   Italic, 
@@ -98,6 +99,8 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [showImageModal, setShowImageModal] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isUploadingInline, setIsUploadingInline] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -287,14 +290,38 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
                 ))}
               </div>
 
-              {/* Custom Image URL input */}
-              <div className="flex items-center gap-2 pt-2">
+              {/* Custom Image URL input & InsForge Storage Upload */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <label className="cursor-pointer px-4 py-2 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] text-xs font-extrabold flex items-center gap-2 border border-[#A3E635]/50 transition-all shadow-md">
+                  <UploadCloud className="w-4 h-4" />
+                  <span>{isUploadingCover ? 'Uploading to InsForge...' : 'Upload Cover File (InsForge Storage)'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploadingCover}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setIsUploadingCover(true);
+                        const res = await uploadToInsForgeStorage(file);
+                        setIsUploadingCover(false);
+                        if (res.url) {
+                          setCoverImage(res.url);
+                        } else {
+                          alert('Upload failed: ' + (res.error || 'Unknown error'));
+                        }
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </label>
+
                 <input
                   type="url"
                   value={customImageUrl}
                   onChange={(e) => setCustomImageUrl(e.target.value)}
-                  placeholder="Or paste custom image URL (https://...)"
-                  className="flex-1 px-4 py-2 rounded-xl bg-black/40 border border-[#1E5E3A] text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#A3E635]"
+                  placeholder="Or paste image URL (https://...)"
+                  className="flex-1 min-w-[200px] px-4 py-2 rounded-xl bg-black/40 border border-[#1E5E3A] text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#A3E635]"
                 />
                 <button
                   type="button"
@@ -306,7 +333,7 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
                   }}
                   className="px-4 py-2 rounded-xl bg-[#1E5E3A] hover:bg-[#287547] text-[#A3E635] text-xs font-bold border border-[#A3E635]/30"
                 >
-                  Use Custom URL
+                  Apply URL
                 </button>
               </div>
             </div>
@@ -388,10 +415,34 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
                   type="button"
                   onClick={() => insertFormatting('![Image Description](', ')')}
                   className="p-2 rounded-lg bg-black/30 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] transition-colors"
-                  title="Insert Image"
+                  title="Insert Image URL"
                 >
                   <ImageIcon className="w-4 h-4" />
                 </button>
+
+                <label className="cursor-pointer p-2 rounded-lg bg-black/30 hover:bg-[#1E5E3A] text-white hover:text-[#A3E635] transition-colors flex items-center gap-1 text-xs font-bold" title="Upload Image File to InsForge Storage">
+                  <UploadCloud className="w-4 h-4 text-[#A3E635]" />
+                  <span className="hidden sm:inline text-[10px]">{isUploadingInline ? 'Uploading...' : 'Upload Image'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploadingInline}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setIsUploadingInline(true);
+                        const res = await uploadToInsForgeStorage(file);
+                        setIsUploadingInline(false);
+                        if (res.url) {
+                          insertFormatting(`\n![${file.name.split('.')[0]}](${res.url})\n`);
+                        } else {
+                          alert('Upload failed: ' + (res.error || 'Unknown error'));
+                        }
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </label>
                 <button
                   type="button"
                   onClick={() => insertFormatting('`', '`')}

@@ -344,6 +344,52 @@ export const logoutUser = () => {
   setStoredAuthUser(null);
 };
 
+// --- STORAGE & PROFILE HELPERS ---
+
+export const uploadToInsForgeStorage = async (file: File): Promise<{ url: string | null; error: string | null }> => {
+  try {
+    const ext = file.name.split('.').pop() || 'png';
+    const cleanFileName = `media_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+    const res = await insforge.storage.from(INSFORGE_CONFIG.storageBucket).upload(cleanFileName, file);
+    if (res.error) {
+      return { url: null, error: res.error.message || 'Storage upload failed' };
+    }
+    if (res.data?.url) {
+      return { url: res.data.url, error: null };
+    }
+    return { url: null, error: 'No URL returned from storage upload' };
+  } catch (err: any) {
+    console.error('InsForge Storage Upload Error:', err);
+    return { url: null, error: err.message || 'File upload failed' };
+  }
+};
+
+export const updateUserProfileAvatar = async (
+  avatarUrl: string,
+  updatedName?: string
+): Promise<UserProfile | null> => {
+  const current = getStoredAuthUser();
+  if (!current) return null;
+
+  const updated: UserProfile = {
+    ...current,
+    avatarUrl,
+    fullName: updatedName || current.fullName,
+  };
+
+  try {
+    await insforge.auth.setProfile({
+      name: updated.fullName,
+      avatar_url: avatarUrl,
+    } as any);
+  } catch (err) {
+    console.warn('InsForge setProfile warning:', err);
+  }
+
+  setStoredAuthUser(updated);
+  return updated;
+};
+
 // --- BLOG POSTS API ---
 
 export const getPublishedBlogPosts = async (): Promise<BlogPostData[]> => {
@@ -441,7 +487,7 @@ export const saveBlogPost = async (post: Partial<BlogPostData>): Promise<BlogPos
   };
 
   try {
-    await insforge.database.from('blog_posts').upsert({
+    await insforge.database.from('blog_posts').upsert([{
       id: newPost.id,
       title: newPost.title,
       slug: newPost.slug,
@@ -454,7 +500,7 @@ export const saveBlogPost = async (post: Partial<BlogPostData>): Promise<BlogPos
       image_url: newPost.imageUrl,
       likes: newPost.likes,
       status: newPost.status,
-    });
+    }]);
   } catch (err) {
     console.warn('InsForge upsert failed:', err);
   }
@@ -511,7 +557,7 @@ export const submitContactInquiry = async (data: Omit<ContactInquiry, 'id' | 'st
   };
 
   try {
-    await insforge.database.from('contact_inquiries').insert({
+    await insforge.database.from('contact_inquiries').insert([{
       id: inquiry.id,
       name: inquiry.name,
       email: inquiry.email,
@@ -519,7 +565,7 @@ export const submitContactInquiry = async (data: Omit<ContactInquiry, 'id' | 'st
       subject: inquiry.subject || '',
       message: inquiry.message,
       status: inquiry.status,
-    });
+    }]);
   } catch (err) {
     console.warn('InsForge inquiry insert failed:', err);
   }
@@ -597,7 +643,7 @@ export const submitPartnerInquiry = async (data: Omit<PartnerInquiry, 'id' | 'st
   };
 
   try {
-    await insforge.database.from('partner_inquiries').insert({
+    await insforge.database.from('partner_inquiries').insert([{
       id: proposal.id,
       company_name: proposal.companyName,
       contact_person: proposal.contactPerson,
@@ -606,7 +652,7 @@ export const submitPartnerInquiry = async (data: Omit<PartnerInquiry, 'id' | 'st
       partnership_type: proposal.partnershipType,
       details: proposal.details,
       status: proposal.status,
-    });
+    }]);
   } catch (err) {
     console.warn('InsForge partner insert failed:', err);
   }
@@ -687,11 +733,11 @@ export const subscribeNewsletter = async (email: string): Promise<boolean> => {
   };
 
   try {
-    await insforge.database.from('newsletter_subscribers').upsert({
+    await insforge.database.from('newsletter_subscribers').upsert([{
       id: subscriber.id,
       email: subscriber.email,
       status: subscriber.status,
-    });
+    }]);
   } catch (err) {
     console.warn('InsForge newsletter insert failed:', err);
   }

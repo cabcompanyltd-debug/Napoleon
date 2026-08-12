@@ -27,7 +27,13 @@ import {
   Users,
   Handshake,
   Send,
-  Plus
+  Plus,
+  Settings,
+  UploadCloud,
+  Key,
+  AlertCircle,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import { 
   UserProfile,
@@ -47,7 +53,9 @@ import {
   getNewsletterSubscribers,
   deleteSubscriber,
   logoutUser,
-  mockLoginAsAdmin
+  signInWithInsForge,
+  uploadToInsForgeStorage,
+  updateUserProfileAvatar
 } from '../lib/insforge';
 import { RichBlogEditor } from '../components/dashboard/RichBlogEditor';
 
@@ -62,7 +70,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onOpenAuth
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'all_posts' | 'inquiries' | 'partners' | 'subscribers' | 'create'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'all_posts' | 'inquiries' | 'partners' | 'subscribers' | 'create' | 'settings'>('overview');
   const [blogPosts, setBlogPosts] = useState<BlogPostData[]>([]);
   const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
   const [partners, setPartners] = useState<PartnerInquiry[]>([]);
@@ -71,6 +79,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPostData | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Gate Form State
+  const [gateEmail, setGateEmail] = useState('admin@napoleonsteadings.com');
+  const [gatePassword, setGatePassword] = useState('');
+  const [gateError, setGateError] = useState<string | null>(null);
+  const [isGateLoading, setIsGateLoading] = useState(false);
+
+  // Profile / Settings State
+  const [adminNameInput, setAdminNameInput] = useState(currentUser?.fullName || 'Napoleon Administrator');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [uploadedMediaUrl, setUploadedMediaUrl] = useState<string | null>(null);
 
   const loadDashboardData = async () => {
     setIsLoading(true);
@@ -95,40 +115,108 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   useEffect(() => {
     loadDashboardData();
+    if (currentUser?.fullName) {
+      setAdminNameInput(currentUser.fullName);
+    }
   }, [currentUser]);
 
-  if (!currentUser) {
+  const handleGateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gateEmail || !gatePassword) {
+      setGateError('Please provide your admin email and password.');
+      return;
+    }
+
+    setIsGateLoading(true);
+    setGateError(null);
+
+    try {
+      const res = await signInWithInsForge(gateEmail, gatePassword, 'admin');
+      if (res.error) {
+        setGateError(res.error);
+      } else {
+        await loadDashboardData();
+      }
+    } catch (err: any) {
+      setGateError(err.message || 'Authentication error.');
+    } finally {
+      setIsGateLoading(false);
+    }
+  };
+
+  if (!currentUser || currentUser.role !== 'admin') {
     return (
-      <div className="w-full pt-32 pb-24 min-h-[80vh] flex items-center justify-center bg-[#07110C] text-white px-4">
-        <div className="max-w-md w-full p-8 rounded-3xl bg-[#0B2518] border border-[#1E5E3A] text-center space-y-6 shadow-2xl">
-          <div className="w-16 h-16 rounded-2xl bg-[#1E5E3A] text-[#A3E635] flex items-center justify-center mx-auto border border-[#A3E635]/30">
-            <ShieldCheck className="w-8 h-8" />
+      <div className="w-full pt-32 pb-24 min-h-[85vh] flex items-center justify-center bg-[#07110C] text-white px-4">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-[#0B2518] border border-[#1E5E3A] space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#A3E635]/10 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="text-center space-y-3">
+            <div className="w-16 h-16 rounded-2xl bg-[#1E5E3A] text-[#A3E635] flex items-center justify-center mx-auto border border-[#A3E635]/30 shadow-lg">
+              <ShieldCheck className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="font-editorial text-2xl font-bold text-white">Executive Admin Portal</h2>
+              <p className="text-xs text-emerald-200/80 leading-relaxed">
+                Sign in with your InsForge admin credentials to access full platform controls, publish articles & review partner inquiries.
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <h2 className="font-editorial text-2xl font-bold text-white">InsForge Management Portal</h2>
-            <p className="text-xs text-emerald-200/80 leading-relaxed">
-              Please sign in to access Napoleon Steadings administrator dashboard, publish articles and manage partner proposals.
-            </p>
-          </div>
+          {gateError && (
+            <div className="p-3.5 rounded-xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+              <span>{gateError}</span>
+            </div>
+          )}
 
-          <div className="space-y-3">
+          <form onSubmit={handleGateSubmit} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-emerald-200/80 block">
+                Admin Email Address
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-emerald-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="email"
+                  required
+                  value={gateEmail}
+                  onChange={(e) => setGateEmail(e.target.value)}
+                  placeholder="admin@napoleonsteadings.com"
+                  className="w-full bg-black/60 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-emerald-200/80 block">
+                Admin Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-emerald-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="password"
+                  required
+                  value={gatePassword}
+                  onChange={(e) => setGatePassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  className="w-full bg-black/60 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
             <button
-              onClick={() => {
-                mockLoginAsAdmin();
-              }}
-              className="w-full py-3.5 px-4 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-sm shadow-xl transition-all flex items-center justify-center gap-2"
+              type="submit"
+              disabled={isGateLoading}
+              className="w-full py-3.5 px-4 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-xs shadow-xl transition-all flex items-center justify-center gap-2"
             >
               <ShieldAlert className="w-4 h-4" />
-              <span>One-Click Login as Admin</span>
+              <span>{isGateLoading ? 'Authenticating via InsForge...' : 'Authenticate & Open Executive Dashboard'}</span>
             </button>
+          </form>
 
-            <button
-              onClick={onOpenAuth}
-              className="w-full py-3 px-4 rounded-xl bg-[#1E5E3A] hover:bg-[#184B2E] text-white font-bold text-xs transition-colors border border-[#A3E635]/30"
-            >
-              Custom Sign In Options
-            </button>
+          <div className="p-3 rounded-xl bg-black/40 border border-[#1E5E3A] text-[10px] text-emerald-100/70 text-center leading-relaxed">
+            <span className="font-bold text-[#A3E635]">InsForge BaaS Authentication:</span> Connected to Postgres backend (<code className="text-emerald-300">82qu5ey7.us-east.insforge.app</code>).
           </div>
         </div>
       </div>
@@ -348,6 +436,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           >
             <Users className="w-4 h-4" />
             <span>Subscribers ({subscribers.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'settings'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Profile & Media Storage</span>
           </button>
 
           <button
@@ -713,6 +813,206 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SETTINGS / PROFILE / MEDIA STORAGE TAB */}
+        {activeTab === 'settings' && (
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-xl text-white">Administrator Profile & InsForge Storage</h3>
+                <p className="text-xs text-emerald-200/70">Manage admin identity, avatars, and upload media assets directly to InsForge Storage bucket</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Profile & Avatar Manager */}
+              <div className="p-6 rounded-3xl bg-[#092416] border border-[#1E5E3A] space-y-6 shadow-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-2xl bg-[#1E5E3A] text-[#A3E635]">
+                    <User className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-base text-white">Administrator Identity</h4>
+                    <p className="text-xs text-emerald-200/70">Stored in InsForge Auth profile metadata</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-5 p-4 rounded-2xl bg-black/40 border border-white/5">
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-2xl bg-[#1E5E3A] border-2 border-[#A3E635]/50 overflow-hidden flex items-center justify-center text-white font-bold text-2xl shadow-inner">
+                      {currentUser?.avatarUrl ? (
+                        <img src={currentUser.avatarUrl} alt="Admin Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{currentUser?.fullName?.[0] || 'A'}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 flex-1">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] text-xs font-extrabold shadow-md transition-all">
+                      <UploadCloud className="w-4 h-4" />
+                      <span>{isUploadingAvatar ? 'Uploading to Bucket...' : 'Upload New Avatar Photo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploadingAvatar}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setIsUploadingAvatar(true);
+                            const res = await uploadToInsForgeStorage(file);
+                            if (res.url) {
+                              await updateUserProfileAvatar(res.url, adminNameInput);
+                              setSuccessMessage('Admin profile avatar updated in InsForge Storage!');
+                              setTimeout(() => setSuccessMessage(null), 4000);
+                            } else {
+                              alert('Avatar upload failed: ' + (res.error || 'Error'));
+                            }
+                            setIsUploadingAvatar(false);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[10px] text-emerald-200/60">Uploads directly to InsForge Storage bucket <code className="text-[#A3E635]">napoleon-media</code></p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-emerald-200/80 block">
+                      Admin Display Name
+                    </label>
+                    <input
+                      type="text"
+                      value={adminNameInput}
+                      onChange={(e) => setAdminNameInput(e.target.value)}
+                      className="w-full bg-black/60 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-emerald-200/80 block">
+                      Admin Email
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={currentUser?.email || ''}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-400 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      await updateUserProfileAvatar(currentUser?.avatarUrl, adminNameInput);
+                      setSuccessMessage('Admin profile name saved successfully!');
+                      setTimeout(() => setSuccessMessage(null), 4000);
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-[#1E5E3A] hover:bg-[#184B2E] text-[#A3E635] font-bold text-xs border border-[#A3E635]/30 transition-colors"
+                  >
+                    Save Identity Changes
+                  </button>
+                </div>
+              </div>
+
+              {/* InsForge Media Storage CDN Uploader */}
+              <div className="p-6 rounded-3xl bg-[#092416] border border-[#1E5E3A] space-y-6 shadow-xl flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-2xl bg-[#1E5E3A] text-[#A3E635]">
+                      <UploadCloud className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-base text-white">InsForge Media Storage Bucket</h4>
+                      <p className="text-xs text-emerald-200/70">Upload images & assets for instant public CDN URLs</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-emerald-200/80 leading-relaxed">
+                    Upload photos for farm products, executive bios, or blog inline images. All files are permanently hosted on the InsForge media storage network.
+                  </p>
+
+                  <div className="p-6 rounded-2xl border-2 border-dashed border-[#1E5E3A] bg-black/30 text-center space-y-3">
+                    <UploadCloud className="w-10 h-10 text-[#A3E635] mx-auto opacity-80" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-white">Select image file from computer</p>
+                      <p className="text-[10px] text-emerald-200/60">Supports JPG, PNG, WEBP, SVG up to 10MB</p>
+                    </div>
+
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] text-xs font-extrabold shadow-lg transition-transform hover:scale-105">
+                      <span>{isUploadingMedia ? 'Uploading File...' : 'Choose File & Upload'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploadingMedia}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setIsUploadingMedia(true);
+                            const res = await uploadToInsForgeStorage(file);
+                            setIsUploadingMedia(false);
+                            if (res.url) {
+                              setUploadedMediaUrl(res.url);
+                              setSuccessMessage('File uploaded to InsForge Storage!');
+                              setTimeout(() => setSuccessMessage(null), 4000);
+                            } else {
+                              alert('Media upload failed: ' + (res.error || 'Error'));
+                            }
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {uploadedMediaUrl && (
+                    <div className="p-4 rounded-2xl bg-black/60 border border-[#A3E635]/50 space-y-2 animate-fade-in">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3E635]">Public InsForge CDN Link:</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(uploadedMediaUrl);
+                            alert('URL copied to clipboard!');
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-[#1E5E3A] text-[#A3E635] text-[10px] font-bold flex items-center gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Copy URL</span>
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        readOnly
+                        value={uploadedMediaUrl}
+                        className="w-full bg-black border border-white/10 rounded-lg px-3 py-1.5 text-[11px] font-mono text-emerald-300 focus:outline-none"
+                      />
+                      <div className="w-full h-32 rounded-xl overflow-hidden border border-white/10 bg-black">
+                        <img src={uploadedMediaUrl} alt="Uploaded preview" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Technical Specs Box */}
+                <div className="p-4 rounded-2xl bg-black/40 border border-[#1E5E3A] text-xs space-y-2">
+                  <div className="flex items-center justify-between text-emerald-200/80 text-[11px]">
+                    <span>InsForge Host API:</span>
+                    <span className="font-mono text-white">82qu5ey7.us-east.insforge.app</span>
+                  </div>
+                  <div className="flex items-center justify-between text-emerald-200/80 text-[11px]">
+                    <span>Storage Bucket Name:</span>
+                    <span className="font-mono text-[#A3E635]">napoleon-media</span>
+                  </div>
+                  <div className="flex items-center justify-between text-emerald-200/80 text-[11px]">
+                    <span>Database Engine:</span>
+                    <span className="font-mono text-white">InsForge Postgres SQL</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
