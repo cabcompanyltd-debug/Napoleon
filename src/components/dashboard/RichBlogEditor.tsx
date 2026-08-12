@@ -101,6 +101,17 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
   const [showImageModal, setShowImageModal] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingInline, setIsUploadingInline] = useState(false);
+  const [editorError, setEditorError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    setTitle(initialTitle);
+    setSummary(initialSummary);
+    setContent(initialContent);
+    setCategory(initialCategory || 'Agricultural Innovation');
+    setCoverImage(initialCoverImage || SUGGESTED_COVER_IMAGES[0].url);
+    setTags(initialTags && initialTags.length > 0 ? initialTags : ['GhanaAgri', 'VoltaRegion', 'Innovation']);
+    setIsPublished(initialIsPublished ?? true);
+  }, [initialTitle, initialSummary, initialContent, initialCategory, initialCoverImage, initialTags, initialIsPublished]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -217,6 +228,13 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
       </div>
 
       <form onSubmit={handleFormSubmit} className="space-y-6">
+        {editorError && (
+          <div className="p-4 rounded-2xl bg-red-950/80 border border-red-500/40 text-red-200 text-xs flex items-center justify-between">
+            <span>{editorError}</span>
+            <button type="button" onClick={() => setEditorError(null)} className="text-white hover:text-red-300 font-bold ml-2">✕</button>
+          </div>
+        )}
+
         {activeTab === 'write' ? (
           <>
             {/* Title & Category Row */}
@@ -307,8 +325,9 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
                         setIsUploadingCover(false);
                         if (res.url) {
                           setCoverImage(res.url);
+                          setEditorError(null);
                         } else {
-                          alert('Upload failed: ' + (res.error || 'Unknown error'));
+                          setEditorError('Upload failed: ' + (res.error || 'Unknown error'));
                         }
                       }
                     }}
@@ -435,8 +454,9 @@ export const RichBlogEditor: React.FC<RichBlogEditorProps> = ({
                         setIsUploadingInline(false);
                         if (res.url) {
                           insertFormatting(`\n![${file.name.split('.')[0]}](${res.url})\n`);
+                          setEditorError(null);
                         } else {
-                          alert('Upload failed: ' + (res.error || 'Unknown error'));
+                          setEditorError('Upload failed: ' + (res.error || 'Unknown error'));
                         }
                       }
                     }}

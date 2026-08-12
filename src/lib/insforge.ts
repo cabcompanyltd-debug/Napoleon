@@ -423,16 +423,21 @@ export const getPublishedBlogPosts = async (): Promise<BlogPostData[]> => {
         id: item.id,
         title: item.title,
         slug: item.slug,
-        excerpt: item.excerpt,
-        content: item.content,
-        category: item.category,
-        author: item.author,
-        date: item.date,
-        readTime: item.read_time,
-        imageUrl: item.image_url,
+        excerpt: item.excerpt || item.summary || '',
+        content: item.content || '',
+        category: item.category || 'General',
+        author: item.author || item.author_name || 'Napoleon Editorial',
+        date: item.date || item.published_at || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        readTime: item.read_time || '4 min read',
+        imageUrl: item.image_url || item.cover_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
         likes: item.likes || 0,
-        status: item.status,
-        createdAt: item.created_at,
+        status: item.status || 'published',
+        createdAt: item.created_at || new Date().toISOString(),
+        // Aliases for multi-component support
+        coverImage: item.image_url || item.cover_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
+        summary: item.excerpt || item.summary || '',
+        authorName: item.author || item.author_name || 'Napoleon Editorial',
+        publishedAt: item.created_at || item.date || new Date().toISOString(),
       }));
     }
   } catch (err) {
@@ -443,10 +448,28 @@ export const getPublishedBlogPosts = async (): Promise<BlogPostData[]> => {
   const localRaw = localStorage.getItem(STORAGE_KEYS.BLOG_POSTS);
   if (localRaw) {
     const parsed: BlogPostData[] = JSON.parse(localRaw);
-    return parsed.filter(p => p.status === 'published');
+    return parsed
+      .filter(p => p.status === 'published')
+      .map((item: any) => ({
+        ...item,
+        imageUrl: item.imageUrl || item.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
+        excerpt: item.excerpt || item.summary || '',
+        author: item.author || item.authorName || 'Napoleon Editorial',
+        date: item.date || item.publishedAt || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        coverImage: item.imageUrl || item.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
+        summary: item.excerpt || item.summary || '',
+        authorName: item.author || item.authorName || 'Napoleon Editorial',
+        publishedAt: item.createdAt || item.date || new Date().toISOString(),
+      }));
   } else {
     localStorage.setItem(STORAGE_KEYS.BLOG_POSTS, JSON.stringify(SEED_BLOG_POSTS));
-    return SEED_BLOG_POSTS.filter(p => p.status === 'published');
+    return SEED_BLOG_POSTS.filter(p => p.status === 'published').map((item: any) => ({
+      ...item,
+      coverImage: item.imageUrl,
+      summary: item.excerpt,
+      authorName: item.author,
+      publishedAt: item.createdAt || item.date
+    }));
   }
 };
 
@@ -462,16 +485,20 @@ export const getAllBlogPosts = async (): Promise<BlogPostData[]> => {
         id: item.id,
         title: item.title,
         slug: item.slug,
-        excerpt: item.excerpt,
-        content: item.content,
-        category: item.category,
-        author: item.author,
-        date: item.date,
-        readTime: item.read_time,
-        imageUrl: item.image_url,
+        excerpt: item.excerpt || item.summary || '',
+        content: item.content || '',
+        category: item.category || 'General',
+        author: item.author || item.author_name || 'Napoleon Editorial',
+        date: item.date || item.published_at || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        readTime: item.read_time || '4 min read',
+        imageUrl: item.image_url || item.cover_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
         likes: item.likes || 0,
-        status: item.status,
-        createdAt: item.created_at,
+        status: item.status || 'published',
+        createdAt: item.created_at || new Date().toISOString(),
+        coverImage: item.image_url || item.cover_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
+        summary: item.excerpt || item.summary || '',
+        authorName: item.author || item.author_name || 'Napoleon Editorial',
+        publishedAt: item.created_at || item.date || new Date().toISOString(),
       }));
     }
   } catch (err) {
@@ -480,28 +507,54 @@ export const getAllBlogPosts = async (): Promise<BlogPostData[]> => {
 
   const localRaw = localStorage.getItem(STORAGE_KEYS.BLOG_POSTS);
   if (localRaw) {
-    return JSON.parse(localRaw);
+    const parsed = JSON.parse(localRaw);
+    return parsed.map((item: any) => ({
+      ...item,
+      imageUrl: item.imageUrl || item.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
+      excerpt: item.excerpt || item.summary || '',
+      author: item.author || item.authorName || 'Napoleon Editorial',
+      date: item.date || item.publishedAt || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      coverImage: item.imageUrl || item.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
+      summary: item.excerpt || item.summary || '',
+      authorName: item.author || item.authorName || 'Napoleon Editorial',
+      publishedAt: item.createdAt || item.date || new Date().toISOString(),
+    }));
   } else {
     localStorage.setItem(STORAGE_KEYS.BLOG_POSTS, JSON.stringify(SEED_BLOG_POSTS));
-    return SEED_BLOG_POSTS;
+    return SEED_BLOG_POSTS.map((item: any) => ({
+      ...item,
+      coverImage: item.imageUrl,
+      summary: item.excerpt,
+      authorName: item.author,
+      publishedAt: item.createdAt || item.date
+    }));
   }
 };
 
 export const saveBlogPost = async (post: Partial<BlogPostData>): Promise<BlogPostData> => {
+  let existing: BlogPostData | undefined;
+  if (post.id) {
+    const current = await getAllBlogPosts();
+    existing = current.find(p => p.id === post.id);
+  }
+
+  const title = post.title || existing?.title || 'Untitled Article';
+  const slug = post.slug || existing?.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
   const newPost: BlogPostData = {
     id: post.id || `post-${Date.now()}`,
-    title: post.title || 'Untitled Article',
-    slug: post.slug || (post.title ? post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : `article-${Date.now()}`),
-    excerpt: post.excerpt || '',
-    content: post.content || '',
-    category: post.category || 'General',
-    author: post.author || 'Napoleon Steadings Editorial',
-    date: post.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-    readTime: post.readTime || '4 min read',
-    imageUrl: post.imageUrl || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
-    likes: post.likes || 0,
-    status: post.status || 'published',
-    createdAt: new Date().toISOString(),
+    title,
+    slug,
+    excerpt: post.excerpt !== undefined ? post.excerpt : (existing?.excerpt || ''),
+    content: post.content !== undefined ? post.content : (existing?.content || ''),
+    category: post.category || existing?.category || 'General',
+    author: post.author || existing?.author || 'Napoleon Steadings Editorial',
+    date: post.date || existing?.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    readTime: post.readTime || existing?.readTime || '4 min read',
+    imageUrl: post.imageUrl || (post as any).coverImage || existing?.imageUrl || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80',
+    likes: post.likes !== undefined ? post.likes : (existing?.likes || 0),
+    status: post.status || existing?.status || 'published',
+    createdAt: existing?.createdAt || new Date().toISOString(),
   };
 
   try {
@@ -845,24 +898,30 @@ export const getProductBySlug = async (slug: string): Promise<ProductData | null
 };
 
 export const saveProduct = async (prod: Partial<ProductData>): Promise<ProductData> => {
-  const name = prod.name || 'Untitled Product';
-  const slug = prod.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  let existing: ProductData | undefined;
+  if (prod.id) {
+    const current = await getProducts();
+    existing = current.find(p => p.id === prod.id);
+  }
+
+  const name = prod.name || existing?.name || 'Untitled Product';
+  const slug = prod.slug || existing?.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   
   const productItem: ProductData = {
     id: prod.id || `prod-${Date.now()}`,
     slug,
     name,
-    category: prod.category || 'Fresh Produce',
-    tagline: prod.tagline || '',
-    description: prod.description || '',
-    harvestSeason: prod.harvestSeason || 'Year-Round',
-    packagingOptions: prod.packagingOptions || ['Standard Commercial Packaging'],
-    minOrderQuantity: prod.minOrderQuantity || '1 Ton',
-    image: prod.image || 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&q=80&w=800',
-    galleryImages: prod.galleryImages || [prod.image || 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&q=80&w=800'],
-    nutritionalHighlights: prod.nutritionalHighlights || [],
-    isFeatured: prod.isFeatured ?? true,
-    createdAt: new Date().toISOString(),
+    category: prod.category || existing?.category || 'Fresh Produce',
+    tagline: prod.tagline !== undefined ? prod.tagline : (existing?.tagline || ''),
+    description: prod.description !== undefined ? prod.description : (existing?.description || ''),
+    harvestSeason: prod.harvestSeason || existing?.harvestSeason || 'Year-Round',
+    packagingOptions: prod.packagingOptions || existing?.packagingOptions || ['Standard Commercial Packaging'],
+    minOrderQuantity: prod.minOrderQuantity || existing?.minOrderQuantity || '1 Ton',
+    image: prod.image || existing?.image || 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=800',
+    galleryImages: prod.galleryImages || existing?.galleryImages || [prod.image || existing?.image || 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=800'],
+    nutritionalHighlights: prod.nutritionalHighlights || existing?.nutritionalHighlights || [],
+    isFeatured: prod.isFeatured !== undefined ? prod.isFeatured : (existing?.isFeatured ?? true),
+    createdAt: existing?.createdAt || new Date().toISOString(),
   };
 
   try {

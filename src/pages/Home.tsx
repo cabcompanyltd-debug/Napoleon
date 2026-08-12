@@ -6,7 +6,7 @@ import {
   BarChart3, Sparkles, Compass, Wheat, Factory, Truck, Users, Droplets
 } from 'lucide-react';
 import { COMPANY_INFO, FARMS_DATA, PRODUCTS_DATA, PROJECTS_DATA, NEWS_DATA } from '../data/companyData';
-import { getProducts, ProductData } from '../lib/insforge';
+import { getProducts, getPublishedBlogPosts, ProductData, BlogPostData } from '../lib/insforge';
 import { Reveal } from '../components/animations/Reveal';
 import { ImageReveal } from '../components/animations/ImageReveal';
 import { AnimatedHeading } from '../components/animations/AnimatedHeading';
@@ -22,6 +22,7 @@ interface HomeProps {
 export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   const [activeAgCategory, setActiveAgCategory] = useState<'crops' | 'livestock' | 'horticulture' | 'processing'>('crops');
   const [featuredProducts, setFeaturedProducts] = useState<ProductData[]>(PRODUCTS_DATA as any);
+  const [latestArticles, setLatestArticles] = useState<any[]>(NEWS_DATA);
 
   useEffect(() => {
     let isMounted = true;
@@ -30,6 +31,13 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         setFeaturedProducts(res);
       }
     }).catch(() => {});
+
+    getPublishedBlogPosts().then((posts) => {
+      if (isMounted && posts && posts.length > 0) {
+        setLatestArticles(posts);
+      }
+    }).catch(() => {});
+
     return () => { isMounted = false; };
   }, []);
 
@@ -677,42 +685,49 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {NEWS_DATA.map((article) => (
-              <Reveal key={article.id} variant="fadeUp">
-                <div className="group rounded-3xl overflow-hidden bg-white border border-[#1E5E3A]/20 shadow-xl flex flex-col h-full hover:-translate-y-2 transition-all">
-                  <div className="relative aspect-16/10 overflow-hidden">
-                    <img
-                      src={article.image}
-                      alt={article.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute top-3 left-3 bg-[#0B2B1B]/90 text-[#A3E635] px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#A3E635]/30">
-                      {article.category}
-                    </div>
-                  </div>
+            {latestArticles.slice(0, 3).map((article) => {
+              const img = article.imageUrl || article.image || article.coverImage || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80';
+              const summaryText = article.excerpt || article.summary || '';
+              const displayDate = article.date || article.publishedAt || 'Recent';
+              const displayReadTime = article.readTime || '4 min read';
 
-                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                    <div>
-                      <span className="text-[11px] font-mono text-slate-500 block mb-2">{article.date} • {article.readTime}</span>
-                      <h4 className="font-editorial text-lg font-bold text-[#0B2B1B] group-hover:text-[#1E5E3A] transition-colors leading-snug">
-                        {article.title}
-                      </h4>
-                      <p className="text-xs text-slate-600 line-clamp-2 mt-2 leading-relaxed">
-                        {article.summary}
-                      </p>
+              return (
+                <Reveal key={article.id} variant="fadeUp">
+                  <div className="group rounded-3xl overflow-hidden bg-white border border-[#1E5E3A]/20 shadow-xl flex flex-col h-full hover:-translate-y-2 transition-all">
+                    <div className="relative aspect-16/10 overflow-hidden">
+                      <img
+                        src={img}
+                        alt={article.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-3 left-3 bg-[#0B2B1B]/90 text-[#A3E635] px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#A3E635]/30">
+                        {article.category || 'Agricultural Innovation'}
+                      </div>
                     </div>
 
-                    <button
-                      onClick={() => onNavigate(`/insights/${article.slug}`)}
-                      className="text-xs font-bold text-[#1E5E3A] hover:underline inline-flex items-center gap-1 pt-2"
-                    >
-                      <span>Read Article</span> &rarr;
-                    </button>
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div>
+                        <span className="text-[11px] font-mono text-slate-500 block mb-2">{displayDate} • {displayReadTime}</span>
+                        <h4 className="font-editorial text-lg font-bold text-[#0B2B1B] group-hover:text-[#1E5E3A] transition-colors leading-snug">
+                          {article.title}
+                        </h4>
+                        <p className="text-xs text-slate-600 line-clamp-2 mt-2 leading-relaxed">
+                          {summaryText}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => onNavigate(`/insights/${article.slug}`)}
+                        className="text-xs font-bold text-[#1E5E3A] hover:underline inline-flex items-center gap-1 pt-2"
+                      >
+                        <span>Read Article</span> &rarr;
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </Reveal>
-            ))}
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </section>

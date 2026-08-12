@@ -18,31 +18,29 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
   useEffect(() => {
     const loadArticle = async () => {
       setIsLoading(true);
-      // Check preset news data first
-      const local = NEWS_DATA.find((n) => n.slug === slug);
-      if (local) {
-        setNewsArticle(local);
-        setIsLoading(false);
-        return;
-      }
 
-      // Check Firestore published blog posts
+      // Check InsForge published blog posts first
       try {
         const posts = await getPublishedBlogPosts();
         const found = posts.find((p) => p.slug === slug || p.id === slug);
         if (found) {
           setFirestorePost(found);
           setLikes(found.likes || 0);
-        } else {
-          // Fallback to first article if missing
-          setNewsArticle(NEWS_DATA[0]);
+          setIsLoading(false);
+          return;
         }
       } catch (err) {
-        console.error('Error finding article:', err);
-        setNewsArticle(NEWS_DATA[0]);
-      } finally {
-        setIsLoading(false);
+        console.error('Error finding article in InsForge:', err);
       }
+
+      // Fallback to preset news data if not in InsForge database
+      const local = NEWS_DATA.find((n) => n.slug === slug);
+      if (local) {
+        setNewsArticle(local);
+      } else {
+        setNewsArticle(NEWS_DATA[0]);
+      }
+      setIsLoading(false);
     };
 
     loadArticle();
@@ -68,7 +66,9 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
   const isUserPost = !!firestorePost;
   const title = isUserPost ? firestorePost.title : newsArticle?.title;
   const category = isUserPost ? firestorePost.category : newsArticle?.category;
-  const date = isUserPost ? new Date(firestorePost.publishedAt).toLocaleDateString() : newsArticle?.date;
+  const date = isUserPost 
+    ? (firestorePost.date || (firestorePost.publishedAt ? (isNaN(Date.parse(firestorePost.publishedAt)) ? firestorePost.publishedAt : new Date(firestorePost.publishedAt).toLocaleDateString()) : 'Recent')) 
+    : newsArticle?.date;
   const readTime = isUserPost ? firestorePost.readTime : newsArticle?.readTime;
   const coverImage = isUserPost ? firestorePost.coverImage : newsArticle?.image;
   const authorName = isUserPost ? firestorePost.authorName : newsArticle?.author;

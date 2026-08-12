@@ -99,6 +99,51 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [isUploadingProdImage, setIsUploadingProdImage] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Custom Delete Modal & Toast States
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    type: 'post' | 'product' | 'inquiry' | 'partner' | 'subscriber';
+    id: string;
+    title: string;
+  } | null>(null);
+
+  const [toastMessage, setToastMessage] = useState<{
+    text: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage({ text, type });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal) return;
+    const { type, id, title } = deleteModal;
+    setDeleteModal(null);
+    try {
+      if (type === 'post') {
+        await deleteBlogPost(id);
+        showToast(`Article "${title}" permanently deleted`, 'success');
+      } else if (type === 'product') {
+        await deleteProduct(id);
+        showToast(`Product "${title}" removed from catalog`, 'success');
+      } else if (type === 'inquiry') {
+        await deleteContactInquiry(id);
+        showToast(`Contact inquiry record deleted`, 'success');
+      } else if (type === 'partner') {
+        await deletePartnerInquiry(id);
+        showToast(`Partner proposal record deleted`, 'success');
+      } else if (type === 'subscriber') {
+        await deleteSubscriber(id);
+        showToast(`Newsletter subscriber removed`, 'success');
+      }
+      await loadDashboardData();
+    } catch (err: any) {
+      showToast(err.message || 'Error deleting item from InsForge', 'error');
+    }
+  };
+
   // Gate Form State
   const [gateEmail, setGateEmail] = useState('admin@napoleonsteadings.com');
   const [gatePassword, setGatePassword] = useState('');
@@ -168,11 +213,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       const res = await uploadToInsForgeStorage(file);
       if (res.url) {
         setProdFormImage(res.url);
+        showToast('Product image uploaded to InsForge storage!');
       } else {
-        alert(res.error || 'Failed to upload product image to InsForge storage');
+        showToast(res.error || 'Failed to upload product image', 'error');
       }
     } catch (err: any) {
-      alert(err.message || 'Image upload error');
+      showToast(err.message || 'Image upload error', 'error');
     } finally {
       setIsUploadingProdImage(false);
     }
@@ -194,26 +240,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         image: prodFormImage,
         isFeatured: prodFormFeatured,
       });
-      setSuccessMessage(editingProduct ? 'Product specifications updated!' : 'New product created in InsForge database!');
+      showToast(editingProduct ? 'Product specifications updated!' : 'New product created in InsForge database!');
       setShowProductModal(false);
       setEditingProduct(null);
       await loadDashboardData();
-      setTimeout(() => setSuccessMessage(null), 4000);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to save product', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteProductItem = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this product from InsForge database?')) return;
-    try {
-      await deleteProduct(id);
-      await loadDashboardData();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleDeleteProductItem = (id: string, name: string) => {
+    setDeleteModal({ isOpen: true, type: 'product', id, title: name });
   };
 
   useEffect(() => {
@@ -350,75 +389,51 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         readTime: data.readTime,
       });
 
-      setSuccessMessage(editingPost ? 'Article updated successfully!' : 'New article published successfully!');
+      showToast(editingPost ? 'Article updated successfully!' : 'New article published successfully!');
       setEditingPost(null);
       setActiveTab('all_posts');
       await loadDashboardData();
-
-      setTimeout(() => setSuccessMessage(null), 4000);
-    } catch (err) {
-      console.error('Error saving article:', err);
+    } catch (err: any) {
+      showToast(err.message || 'Error saving article', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeletePost = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this article?')) return;
-    try {
-      await deleteBlogPost(id);
-      await loadDashboardData();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleDeletePost = (id: string, title: string) => {
+    setDeleteModal({ isOpen: true, type: 'post', id, title });
   };
 
   const handleInquiryStatus = async (id: string, status: ContactInquiry['status']) => {
     try {
       await updateInquiryStatus(id, status);
+      showToast(`Inquiry status updated to ${status}`);
       await loadDashboardData();
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      showToast(err.message || 'Error updating status', 'error');
     }
   };
 
-  const handleDeleteInquiry = async (id: string) => {
-    if (!window.confirm('Delete this contact inquiry record?')) return;
-    try {
-      await deleteContactInquiry(id);
-      await loadDashboardData();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleDeleteInquiry = (id: string, name: string) => {
+    setDeleteModal({ isOpen: true, type: 'inquiry', id, title: `Inquiry from ${name}` });
   };
 
   const handlePartnerStatus = async (id: string, status: PartnerInquiry['status']) => {
     try {
       await updatePartnerInquiryStatus(id, status);
+      showToast(`Partner status updated to ${status}`);
       await loadDashboardData();
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      showToast(err.message || 'Error updating status', 'error');
     }
   };
 
-  const handleDeletePartner = async (id: string) => {
-    if (!window.confirm('Delete this partner proposal?')) return;
-    try {
-      await deletePartnerInquiry(id);
-      await loadDashboardData();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleDeletePartner = (id: string, company: string) => {
+    setDeleteModal({ isOpen: true, type: 'partner', id, title: `Proposal from ${company}` });
   };
 
-  const handleDeleteSubscriber = async (id: string) => {
-    if (!window.confirm('Remove this newsletter subscriber?')) return;
-    try {
-      await deleteSubscriber(id);
-      await loadDashboardData();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleDeleteSubscriber = (id: string, email: string) => {
+    setDeleteModal({ isOpen: true, type: 'subscriber', id, title: email });
   };
 
   return (
@@ -751,7 +766,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       </button>
 
                       <button
-                        onClick={() => handleDeletePost(post.id)}
+                        onClick={() => handleDeletePost(post.id, post.title)}
                         className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 transition-colors"
                         title="Delete Article"
                       >
@@ -828,7 +843,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       </button>
 
                       <button
-                        onClick={() => handleDeleteProductItem(prod.id)}
+                        onClick={() => handleDeleteProductItem(prod.id, prod.name)}
                         className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 transition-colors"
                         title="Delete Product"
                       >
@@ -874,7 +889,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       </select>
 
                       <button
-                        onClick={() => handleDeleteInquiry(inq.id)}
+                        onClick={() => handleDeleteInquiry(inq.id, inq.name)}
                         className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 transition-colors"
                         title="Delete Inquiry"
                       >
@@ -927,7 +942,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       </select>
 
                       <button
-                        onClick={() => handleDeletePartner(part.id)}
+                        onClick={() => handleDeletePartner(part.id, part.companyName)}
                         className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 transition-colors"
                         title="Delete Proposal"
                       >
@@ -995,7 +1010,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                         </td>
                         <td className="py-3 px-3 text-right">
                           <button
-                            onClick={() => handleDeleteSubscriber(sub.id)}
+                            onClick={() => handleDeleteSubscriber(sub.id, sub.email)}
                             className="text-[11px] font-bold text-red-400 hover:underline"
                           >
                             Remove
@@ -1059,10 +1074,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                             const res = await uploadToInsForgeStorage(file);
                             if (res.url) {
                               await updateUserProfileAvatar(res.url, adminNameInput);
-                              setSuccessMessage('Admin profile avatar updated in InsForge Storage!');
-                              setTimeout(() => setSuccessMessage(null), 4000);
+                              showToast('Admin profile avatar updated in InsForge Storage!');
                             } else {
-                              alert('Avatar upload failed: ' + (res.error || 'Error'));
+                              showToast('Avatar upload failed: ' + (res.error || 'Error'), 'error');
                             }
                             setIsUploadingAvatar(false);
                           }
@@ -1150,10 +1164,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                             setIsUploadingMedia(false);
                             if (res.url) {
                               setUploadedMediaUrl(res.url);
-                              setSuccessMessage('File uploaded to InsForge Storage!');
-                              setTimeout(() => setSuccessMessage(null), 4000);
+                              showToast('File uploaded to InsForge Storage!');
                             } else {
-                              alert('Media upload failed: ' + (res.error || 'Error'));
+                              showToast('Media upload failed: ' + (res.error || 'Error'), 'error');
                             }
                           }
                         }}
@@ -1169,7 +1182,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(uploadedMediaUrl);
-                            alert('URL copied to clipboard!');
+                            showToast('CDN URL copied to clipboard!');
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#1E5E3A] text-[#A3E635] text-[10px] font-bold flex items-center gap-1"
                         >
@@ -1407,6 +1420,78 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* CUSTOM DELETE CONFIRMATION MODAL */}
+        {deleteModal?.isOpen && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-[#0A2216] border border-red-500/40 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-red-950/80 text-red-400 border border-red-500/40 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-editorial text-xl font-bold text-white">Confirm Permanent Deletion</h3>
+                  <p className="text-xs text-red-200/80 mt-0.5">InsForge Database Action</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-xs space-y-2">
+                <p className="text-emerald-200/90 leading-relaxed">
+                  Are you sure you want to permanently delete <span className="font-bold text-white">"{deleteModal.title}"</span>?
+                </p>
+                <p className="text-[11px] text-red-300/80 italic">
+                  This record will be completely removed from the InsForge backend tables.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteModal(null)}
+                  className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 transition-transform active:scale-95"
+                >
+                  Yes, Delete Record
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CUSTOM FLOATING TOAST NOTIFICATION */}
+        {toastMessage && (
+          <div className="fixed top-24 right-4 sm:right-8 z-50 max-w-md w-full animate-slide-in">
+            <div className={`p-4 rounded-2xl border shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 text-xs ${
+              toastMessage.type === 'error'
+                ? 'bg-red-950/95 border-red-500/50 text-red-100'
+                : 'bg-[#0B2518]/95 border-[#A3E635]/60 text-white shadow-[#A3E635]/10'
+            }`}>
+              <div className="flex items-center gap-3">
+                {toastMessage.type === 'error' ? (
+                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                ) : (
+                  <CheckCircle className="w-5 h-5 text-[#A3E635] shrink-0" />
+                )}
+                <span className="font-semibold">{toastMessage.text}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setToastMessage(null)}
+                className="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white"
+              >
+                ✕
+              </button>
             </div>
           </div>
         )}
