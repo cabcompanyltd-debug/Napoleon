@@ -258,7 +258,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <div className="flex flex-wrap items-center gap-2.5">
                 {/* Google Play Store Badge */}
                 <button
-                  onClick={() => window.dispatchEvent(new Event('trigger-pwa-install'))}
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-store-pwa-modal', { detail: { storeType: 'play' } }))}
                   className="px-3.5 py-2 rounded-xl bg-black/80 hover:bg-[#1E5E3A] text-white border border-[#A3E635]/40 hover:border-[#A3E635] transition-all flex items-center gap-2.5 shadow-md active:scale-95 cursor-pointer group"
                   title="Install NS LTD on Android / Google Play"
                 >
@@ -271,7 +271,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
                 {/* Apple App Store Badge */}
                 <button
-                  onClick={() => window.dispatchEvent(new Event('trigger-pwa-install'))}
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-store-pwa-modal', { detail: { storeType: 'apple' } }))}
                   className="px-3.5 py-2 rounded-xl bg-black/80 hover:bg-[#1E5E3A] text-white border border-[#A3E635]/40 hover:border-[#A3E635] transition-all flex items-center gap-2.5 shadow-md active:scale-95 cursor-pointer group"
                   title="Install NS LTD on iOS / App Store"
                 >

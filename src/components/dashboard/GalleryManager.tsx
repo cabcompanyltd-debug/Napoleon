@@ -57,6 +57,9 @@ export const GalleryManager: React.FC = () => {
   const [displayOrder, setDisplayOrder] = useState<number>(1);
   const [isPublished, setIsPublished] = useState(true);
 
+  // Custom Delete Modal State
+  const [deleteModalItem, setDeleteModalItem] = useState<{ id: string; title: string } | null>(null);
+
   // Image Specifics
   const [imageUrl, setImageUrl] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -288,15 +291,21 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
-  const handleDeleteItem = async (id: string, itemTitle: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${itemTitle}"?`)) return;
+  const handleDeleteItem = (id: string, itemTitle: string) => {
+    setDeleteModalItem({ id, title: itemTitle });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalItem) return;
+    const { id, title: itemTitle } = deleteModalItem;
+    setDeleteModalItem(null);
 
     try {
       await deleteGalleryItem(id);
-      setStatusMsg({ type: 'success', text: `Deleted "${itemTitle}".` });
+      setStatusMsg({ type: 'success', text: `Gallery item "${itemTitle}" permanently deleted.` });
       await loadGalleryItems();
     } catch (err: any) {
-      setStatusMsg({ type: 'error', text: 'Failed to delete gallery item.' });
+      setStatusMsg({ type: 'error', text: 'Failed to delete gallery item from InsForge.' });
     }
   };
 
@@ -906,6 +915,50 @@ export const GalleryManager: React.FC = () => {
                 className="px-4 py-2 rounded-xl bg-[#1E5E3A] text-[#A3E635] font-bold text-xs border border-[#A3E635]/40"
               >
                 Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* CUSTOM DELETE CONFIRMATION MODAL */}
+      {deleteModalItem && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[#0A2216] border border-red-500/50 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden ring-1 ring-red-500/30">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-950/80 text-red-400 border border-red-500/40 flex items-center justify-center shrink-0 shadow-lg">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-editorial text-xl font-bold text-white">Confirm Permanent Deletion</h3>
+                <p className="text-xs text-red-200/80 mt-0.5">InsForge Gallery Action</p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-black/50 border border-white/10 text-xs space-y-2">
+              <p className="text-emerald-200/90 leading-relaxed">
+                Are you sure you want to permanently delete gallery item <span className="font-bold text-white">"{deleteModalItem.title}"</span>?
+              </p>
+              <p className="text-[11px] text-red-300/80 italic">
+                This item will be completely removed from the InsForge database and live gallery feed.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteModalItem(null)}
+                className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 transition-transform active:scale-95 cursor-pointer"
+              >
+                Yes, Delete Item
               </button>
             </div>
           </div>
