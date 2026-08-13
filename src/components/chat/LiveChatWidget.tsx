@@ -19,6 +19,7 @@ import {
 import {
   getOrCreateVisitorSession,
   saveVisitorUserInfo,
+  clearVisitorSession,
   getSessionMessages,
   sendChatMessage,
   markSessionAsRead,
@@ -111,6 +112,17 @@ export const LiveChatWidget: React.FC = () => {
 
     window.addEventListener('open-admin-chat-session', handleOpenAdminChatSession);
 
+    const resetVisitorState = () => {
+      clearVisitorSession();
+      const newSess = getOrCreateVisitorSession();
+      setVisitorSessionId(newSess.sessionId);
+      setVisitorName('');
+      setVisitorEmail('');
+      setIsVisitorRegistered(false);
+      setVisitorMessages([]);
+      setVisitorUnreadCount(0);
+    };
+
     const unsub = subscribeToChatUpdates(async (event) => {
       if (event.type === 'ADMIN_HEARTBEAT') {
         setAdminStatus(true);
@@ -118,7 +130,7 @@ export const LiveChatWidget: React.FC = () => {
         const msg = event.message;
 
         // Visitor session update
-        if (msg.sessionId === sess.sessionId) {
+        if (msg.sessionId === sess.sessionId || msg.sessionId === visitorSessionId) {
           setVisitorMessages((prev) => {
             if (prev.some((m) => m.id === msg.id)) return prev;
             return [...prev, msg];
@@ -142,13 +154,22 @@ export const LiveChatWidget: React.FC = () => {
           setAdminActiveSessionId(null);
           setAdminMessages([]);
         }
+        if (event.sessionId === sess.sessionId || event.sessionId === visitorSessionId) {
+          resetVisitorState();
+        }
       }
     });
 
     const pollTimer = setInterval(async () => {
-      if (sess.sessionId) {
-        const history = await getSessionMessages(sess.sessionId);
-        setVisitorMessages(history);
+      const currentSessId = visitorSessionId || sess.sessionId;
+      if (currentSessId) {
+        const history = await getSessionMessages(currentSessId);
+        // If visitor was registered but history is now empty (e.g. deleted by admin), reset visitor chatbox
+        if (isVisitorRegistered && history.length === 0) {
+          resetVisitorState();
+        } else {
+          setVisitorMessages(history);
+        }
       }
       if (adminActiveSessionId) {
         const adminMsgs = await getSessionMessages(adminActiveSessionId);
@@ -279,6 +300,17 @@ export const LiveChatWidget: React.FC = () => {
     setAdminActiveSessionId(null);
     setAdminMessages([]);
 
+    if (targetId === visitorSessionId) {
+      clearVisitorSession();
+      const newSess = getOrCreateVisitorSession();
+      setVisitorSessionId(newSess.sessionId);
+      setVisitorName('');
+      setVisitorEmail('');
+      setIsVisitorRegistered(false);
+      setVisitorMessages([]);
+      setVisitorUnreadCount(0);
+    }
+
     await deleteChatSession(targetId);
   };
 
@@ -357,16 +389,17 @@ export const LiveChatWidget: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowDeleteModal(true)}
-                    className="p-2 rounded-xl bg-red-950/80 border border-red-500/40 text-red-400 hover:bg-red-900 transition-colors cursor-pointer"
-                    title="Delete this conversation"
+                    className="px-2.5 py-1.5 rounded-xl bg-red-950/80 border border-red-500/40 text-red-400 hover:bg-red-900 transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+                    title="Close conversation and reset visitor session"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Close & Reset</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleExitAdminMode}
                     className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 hover:text-white transition-colors cursor-pointer"
-                    title="Exit Admin Chat"
+                    title="Exit Admin Chat View"
                   >
                     <LogOut className="w-4 h-4" />
                   </button>
@@ -593,13 +626,13 @@ export const LiveChatWidget: React.FC = () => {
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-white">Delete this conversation?</h3>
+                <h3 className="font-bold text-base text-white">Close & Reset Conversation?</h3>
                 <p className="text-xs text-red-200/80">InsForge Chat Action</p>
               </div>
             </div>
 
             <p className="text-xs text-emerald-200/90 leading-relaxed bg-black/40 p-3.5 rounded-xl border border-white/10">
-              Deleting this conversation will remove its messages and associated chat data for <strong className="text-white">"{adminActiveUserName}"</strong>.
+              Closing and deleting this conversation with <strong className="text-white">"{adminActiveUserName}"</strong> will clear all chat history and reset the visitor's chatbox, requiring them to register as a new visitor next time.
             </p>
 
             <div className="flex items-center gap-3 pt-2">
@@ -615,7 +648,7 @@ export const LiveChatWidget: React.FC = () => {
                 onClick={handleConfirmDeleteSession}
                 className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 transition-transform active:scale-95 cursor-pointer"
               >
-                Delete
+                End & Reset Chat
               </button>
             </div>
           </div>

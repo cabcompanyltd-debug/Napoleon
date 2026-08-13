@@ -298,7 +298,7 @@ export const AdminLiveChat: React.FC = () => {
 
             <div className="p-4 rounded-2xl bg-black/50 border border-white/10 text-xs space-y-2">
               <p className="text-emerald-200/90 leading-relaxed">
-                Deleting this conversation with <strong className="text-white">"{deleteModalSession.userName}"</strong> will remove its messages and associated chat data from InsForge.
+                Deleting this conversation with <strong className="text-white">"{deleteModalSession.userName}"</strong> will remove its messages from InsForge and instantly reset the chatbox on the visitor's end, requiring them to start as a new visitor next time.
               </p>
             </div>
 

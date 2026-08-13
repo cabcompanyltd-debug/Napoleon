@@ -66,6 +66,11 @@ export const saveVisitorUserInfo = (userName: string, userEmail: string) => {
   localStorage.setItem(STORAGE_KEYS.CHAT_USER_INFO, JSON.stringify({ userName, userEmail }));
 };
 
+export const clearVisitorSession = () => {
+  localStorage.removeItem(STORAGE_KEYS.CHAT_SESSION_ID);
+  localStorage.removeItem(STORAGE_KEYS.CHAT_USER_INFO);
+};
+
 // Admin presence heartbeat
 export const sendAdminHeartbeat = () => {
   const now = Date.now();
