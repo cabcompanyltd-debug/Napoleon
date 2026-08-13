@@ -18,6 +18,7 @@ export const GalleryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState('All');
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
 
   const categories = [
     'All',
@@ -137,59 +138,86 @@ export const GalleryPage: React.FC = () => {
           ) : (
             /* Masonry Grid */
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredItems.map((item, idx) => (
-                <div
-                  key={item.id}
-                  onClick={() => setActiveLightboxIndex(idx)}
-                  className="group relative rounded-3xl overflow-hidden bg-black aspect-4/3 cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5"
-                >
-                  <img
-                    src={item.thumbnailUrl || item.imageUrl}
-                    alt={item.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"
-                    referrerPolicy="no-referrer"
-                  />
+              {filteredItems.map((item, idx) => {
+                const isPlayingThisVideo = item.type === 'youtube' && playingVideoId === item.id;
 
-                  {/* YouTube Play Overlay Badge */}
-                  {item.type === 'youtube' && (
-                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                        <Play className="w-6 h-6 fill-current ml-0.5" />
-                      </div>
+                if (isPlayingThisVideo && item.youtubeVideoId) {
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-3xl overflow-hidden bg-black aspect-4/3 border-2 border-[#1E5E3A] shadow-2xl relative"
+                    >
+                      <iframe
+                        title={item.title}
+                        src={`https://www.youtube.com/embed/${item.youtubeVideoId}?autoplay=1`}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
                     </div>
-                  )}
+                  );
+                }
 
-                  {/* Type Badge Top-Right */}
-                  <div className="absolute top-3 right-3 z-10">
-                    {item.type === 'youtube' ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-red-400 text-[10px] font-bold border border-red-500/30 shadow-lg">
-                        <Youtube className="w-3 h-3 text-red-500" />
-                        <span>Video</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-[#A3E635] text-[10px] font-bold border border-[#A3E635]/30 shadow-lg">
-                        <ImageIcon className="w-3 h-3" />
-                        <span>Photo</span>
-                      </span>
-                    )}
-                  </div>
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      if (item.type === 'youtube') {
+                        setPlayingVideoId(item.id);
+                      } else {
+                        setActiveLightboxIndex(idx);
+                      }
+                    }}
+                    className="group relative rounded-3xl overflow-hidden bg-black aspect-4/3 cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5"
+                  >
+                    <img
+                      src={item.thumbnailUrl || item.imageUrl}
+                      alt={item.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"
+                      referrerPolicy="no-referrer"
+                    />
 
-                  {/* Hover Caption Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-end text-white">
-                    <span className="text-[10px] uppercase font-bold text-[#A3E635]">
-                      {item.category}
-                    </span>
-                    <h4 className="font-editorial text-sm font-bold line-clamp-1">{item.title}</h4>
-                    {item.location && (
-                      <p className="text-[11px] text-emerald-200/80 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3 text-[#A3E635]" />
-                        <span>{item.location}</span>
-                      </p>
+                    {/* YouTube Play Overlay Badge */}
+                    {item.type === 'youtube' && (
+                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                          <Play className="w-6 h-6 fill-current ml-0.5" />
+                        </div>
+                      </div>
                     )}
+
+                    {/* Type Badge Top-Right */}
+                    <div className="absolute top-3 right-3 z-10">
+                      {item.type === 'youtube' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-red-400 text-[10px] font-extrabold border border-red-500/30 shadow-lg">
+                          <Youtube className="w-3.5 h-3.5 text-red-500" />
+                          <span>Click to Play</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-[#A3E635] text-[10px] font-extrabold border border-[#A3E635]/30 shadow-lg">
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span>Photo</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Hover Caption Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-end text-white">
+                      <span className="text-[10px] uppercase font-bold text-[#A3E635]">
+                        {item.category}
+                      </span>
+                      <h4 className="font-editorial text-sm font-bold line-clamp-1">{item.title}</h4>
+                      {item.location && (
+                        <p className="text-[11px] text-emerald-200/80 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-[#A3E635]" />
+                          <span>{item.location}</span>
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -77,56 +77,16 @@ export const InsightsPage: React.FC<Props> = ({ onNavigate, onOpenAuth, currentU
 
       {/* Main Insights Feed */}
       <section className="py-16 bg-[#071910]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           
-          {/* Feed Filter Tabs */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1E5E3A]/30 pb-4">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === 'all'
-                    ? 'bg-[#A3E635] text-[#0B2B1B] shadow-md'
-                    : 'bg-black/30 text-white hover:bg-white/10'
-                }`}
-              >
-                All Articles ({NEWS_DATA.length + firestorePosts.length})
-              </button>
-
-              <button
-                onClick={() => setActiveTab('community')}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                  activeTab === 'community'
-                    ? 'bg-[#A3E635] text-[#0B2B1B] shadow-md'
-                    : 'bg-black/30 text-white hover:bg-white/10'
-                }`}
-              >
-                <Globe className="w-3.5 h-3.5" />
-                <span>User Published ({firestorePosts.length})</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('corporate')}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === 'corporate'
-                    ? 'bg-[#A3E635] text-[#0B2B1B] shadow-md'
-                    : 'bg-black/30 text-white hover:bg-white/10'
-                }`}
-              >
-                Corporate Press ({NEWS_DATA.length})
-              </button>
-            </div>
-          </div>
-
           {/* User Published Community Posts Section */}
-          {(activeTab === 'all' || activeTab === 'community') && firestorePosts.length > 0 && (
+          {firestorePosts.length > 0 && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="font-editorial text-2xl font-bold text-[#A3E635] flex items-center gap-2">
                   <Globe className="w-5 h-5 text-[#A3E635]" />
-                  <span>Community & Author Contributions</span>
+                  <span>Published Insights & Articles</span>
                 </h3>
-                <span className="text-xs text-slate-400 font-mono">Live Firestore Feed</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -184,7 +144,7 @@ export const InsightsPage: React.FC<Props> = ({ onNavigate, onOpenAuth, currentU
 
                           <button
                             onClick={() => onNavigate(`/insights/${post.slug}`)}
-                            className="text-xs font-bold text-[#A3E635] hover:underline inline-flex items-center gap-1"
+                            className="text-xs font-bold text-[#A3E635] hover:underline inline-flex items-center gap-1 cursor-pointer"
                           >
                             <span>Read Insight</span> &rarr;
                           </button>
@@ -198,11 +158,10 @@ export const InsightsPage: React.FC<Props> = ({ onNavigate, onOpenAuth, currentU
           )}
 
           {/* Corporate Press Section */}
-          {(activeTab === 'all' || activeTab === 'corporate') && (
-            <div className="space-y-6 pt-6">
-              <h3 className="font-editorial text-2xl font-bold text-white">
-                Official Corporate Releases & Research
-              </h3>
+          <div className="space-y-6 pt-2">
+            <h3 className="font-editorial text-2xl font-bold text-white">
+              Official Corporate Releases & Research
+            </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {NEWS_DATA.map((article) => (
@@ -246,7 +205,6 @@ export const InsightsPage: React.FC<Props> = ({ onNavigate, onOpenAuth, currentU
                 ))}
               </div>
             </div>
-          )}
         </div>
       </section>
     </div>

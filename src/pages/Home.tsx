@@ -27,6 +27,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   const [galleryItems, setGalleryItems] = useState<GalleryItemData[]>([]);
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
   const [galleryFilter, setGalleryFilter] = useState<'all' | 'image' | 'youtube'>('all');
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
 
   const loadGallery = async () => {
     try {
@@ -723,12 +724,12 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Gallery Items Grid */}
+          {/* Gallery Items Grid - Top 3 Recent Items */}
           {(() => {
             const displayed = galleryItems.filter((item) => {
               if (galleryFilter === 'all') return true;
               return item.type === galleryFilter;
-            }).slice(0, 8); // Top 8 latest published items
+            }).slice(0, 3); // Recent 3 galleries only
 
             if (displayed.length === 0) {
               return (
@@ -746,60 +747,87 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             }
 
             return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {displayed.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    onClick={() => setActiveLightboxIndex(idx)}
-                    className="group relative rounded-2xl overflow-hidden bg-black aspect-4/3 cursor-pointer border border-[#1E5E3A]/60 shadow-xl hover:border-[#A3E635]/60 transition-all duration-300 hover:-translate-y-1"
-                  >
-                    <img
-                      src={item.thumbnailUrl || item.imageUrl}
-                      alt={item.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"
-                      referrerPolicy="no-referrer"
-                    />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {displayed.map((item, idx) => {
+                  const isPlayingThisVideo = item.type === 'youtube' && playingVideoId === item.id;
 
-                    {/* YouTube Play Icon Overlay */}
-                    {item.type === 'youtube' && (
-                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                        <div className="w-11 h-11 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                          <Play className="w-5 h-5 fill-current ml-0.5" />
-                        </div>
+                  if (isPlayingThisVideo && item.youtubeVideoId) {
+                    return (
+                      <div
+                        key={item.id}
+                        className="rounded-2xl overflow-hidden bg-black aspect-4/3 border-2 border-[#A3E635] shadow-2xl relative"
+                      >
+                        <iframe
+                          title={item.title}
+                          src={`https://www.youtube.com/embed/${item.youtubeVideoId}?autoplay=1`}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
                       </div>
-                    )}
+                    );
+                  }
 
-                    {/* Badge */}
-                    <div className="absolute top-2.5 right-2.5 z-10">
-                      {item.type === 'youtube' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-red-400 text-[10px] font-bold border border-red-500/40">
-                          <Youtube className="w-3 h-3 text-red-500" />
-                          <span>Video</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-[#A3E635] text-[10px] font-bold border border-[#A3E635]/40">
-                          <ImageIcon className="w-3 h-3" />
-                          <span>Photo</span>
-                        </span>
-                      )}
-                    </div>
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        if (item.type === 'youtube') {
+                          setPlayingVideoId(item.id);
+                        } else {
+                          setActiveLightboxIndex(idx);
+                        }
+                      }}
+                      className="group relative rounded-2xl overflow-hidden bg-black aspect-4/3 cursor-pointer border border-[#1E5E3A]/60 shadow-xl hover:border-[#A3E635]/60 transition-all duration-300 hover:-translate-y-1"
+                    >
+                      <img
+                        src={item.thumbnailUrl || item.imageUrl}
+                        alt={item.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"
+                        referrerPolicy="no-referrer"
+                      />
 
-                    {/* Caption Hover Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-3.5 flex flex-col justify-end text-white">
-                      <span className="text-[10px] uppercase font-bold text-[#A3E635]">
-                        {item.category}
-                      </span>
-                      <h4 className="font-editorial text-xs sm:text-sm font-bold line-clamp-1">{item.title}</h4>
-                      {item.location && (
-                        <p className="text-[10px] text-emerald-200/80 flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 text-[#A3E635]" />
-                          <span>{item.location}</span>
-                        </p>
+                      {/* YouTube Play Icon Overlay */}
+                      {item.type === 'youtube' && (
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                            <Play className="w-6 h-6 fill-current ml-0.5" />
+                          </div>
+                        </div>
                       )}
+
+                      {/* Badge */}
+                      <div className="absolute top-2.5 right-2.5 z-10">
+                        {item.type === 'youtube' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-red-400 text-[10px] font-extrabold border border-red-500/40">
+                            <Youtube className="w-3.5 h-3.5 text-red-500" />
+                            <span>Click to Play Video</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-[#A3E635] text-[10px] font-extrabold border border-[#A3E635]/40">
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            <span>Photo</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Caption Hover Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-end text-white">
+                        <span className="text-[10px] uppercase font-bold text-[#A3E635]">
+                          {item.category}
+                        </span>
+                        <h4 className="font-editorial text-sm font-bold line-clamp-1">{item.title}</h4>
+                        {item.location && (
+                          <p className="text-[10px] text-emerald-200/80 flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3 text-[#A3E635]" />
+                            <span>{item.location}</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}
