@@ -1,28 +1,37 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Send, User, Circle, CheckCheck, Clock, RefreshCw, Mail, Sparkles, Filter, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  MessageSquare,
+  Search,
+  Filter,
+  RefreshCw,
+  Trash2,
+  CheckCheck,
+  Circle,
+  Mail,
+  User,
+  ExternalLink,
+  Sparkles,
+  ShieldCheck,
+  Clock,
+  AlertCircle
+} from 'lucide-react';
 import {
   getAllChatSessions,
-  getSessionMessages,
-  sendChatMessage,
   markSessionAsRead,
+  deleteChatSession,
   subscribeToChatUpdates,
   sendAdminHeartbeat,
   ChatSession,
-  ChatMessage,
 } from '../../lib/chatService';
 
 export const AdminLiveChat: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [replyText, setReplyText] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [filterUnread, setFilterUnread] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [deleteModalSession, setDeleteModalSession] = useState<ChatSession | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Send admin presence heartbeat periodically
+  // Keep admin presence heartbeat active
   useEffect(() => {
     sendAdminHeartbeat();
     const heartbeatTimer = setInterval(sendAdminHeartbeat, 5000);
@@ -33,48 +42,14 @@ export const AdminLiveChat: React.FC = () => {
     const list = await getAllChatSessions();
     setSessions(list);
     setIsLoading(false);
-
-    if (list.length > 0 && !selectedSessionId) {
-      setSelectedSessionId(list[0].sessionId);
-    }
   };
 
   useEffect(() => {
     loadSessions();
 
     const unsub = subscribeToChatUpdates((event) => {
-      if (event.type === 'NEW_MESSAGE' && event.message) {
-        setSessions((prev) => {
-          const updated = [...prev];
-          const idx = updated.findIndex((s) => s.sessionId === event.message!.sessionId);
-          if (idx >= 0) {
-            updated[idx].lastMessage = event.message!.message;
-            updated[idx].lastMessageTime = event.message!.timestamp;
-            if (event.message!.senderRole === 'user') {
-              updated[idx].unreadForAdmin += 1;
-            }
-          } else {
-            // New session
-            updated.unshift({
-              sessionId: event.message!.sessionId,
-              userName: event.message!.senderName || 'Visitor',
-              userEmail: event.message!.senderEmail || '',
-              lastMessage: event.message!.message,
-              lastMessageTime: event.message!.timestamp,
-              unreadForAdmin: event.message!.senderRole === 'user' ? 1 : 0,
-              unreadForUser: 0,
-              status: 'active',
-            });
-          }
-          return updated.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
-        });
-
-        if (event.message.sessionId === selectedSessionId) {
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === event.message!.id)) return prev;
-            return [...prev, event.message!];
-          });
-        }
+      if (event.type === 'NEW_MESSAGE' || event.type === 'SESSION_DELETED') {
+        loadSessions();
       }
     });
 
@@ -84,56 +59,42 @@ export const AdminLiveChat: React.FC = () => {
       unsub();
       clearInterval(pollTimer);
     };
-  }, [selectedSessionId]);
+  }, []);
 
-  // Load messages when selected session changes
-  useEffect(() => {
-    if (!selectedSessionId) return;
+  const handleOpenChatBox = (session: ChatSession) => {
+    // Send heartbeat so admin status is verified
+    sendAdminHeartbeat();
 
-    const loadMsgs = async () => {
-      const msgs = await getSessionMessages(selectedSessionId);
-      setMessages(msgs);
-      await markSessionAsRead(selectedSessionId, 'admin');
+    // Mark as read
+    markSessionAsRead(session.sessionId, 'admin');
 
-      // Clear unread count locally
-      setSessions((prev) =>
-        prev.map((s) => (s.sessionId === selectedSessionId ? { ...s, unreadForAdmin: 0 } : s))
-      );
-    };
-    loadMsgs();
-  }, [selectedSessionId]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSendReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!replyText.trim() || !selectedSessionId) return;
-
-    const textToSend = replyText;
-    setReplyText('');
-
-    const newMsg = await sendChatMessage(
-      selectedSessionId,
-      textToSend,
-      'admin',
-      'Napoleon Admin',
-      'admin@napoleonsteadings.com'
-    );
-
-    setMessages((prev) => [...prev.filter((m) => m.id !== newMsg.id), newMsg]);
-
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.sessionId === selectedSessionId
-          ? { ...s, lastMessage: newMsg.message, lastMessageTime: newMsg.timestamp }
-          : s
-      )
+    // Trigger floating chat box at the bottom-right
+    window.dispatchEvent(
+      new CustomEvent('open-admin-chat-session', {
+        detail: {
+          sessionId: session.sessionId,
+          userName: session.userName,
+          userEmail: session.userEmail,
+        },
+      })
     );
   };
 
-  const selectedSession = sessions.find((s) => s.sessionId === selectedSessionId);
+  const handleMarkAsRead = async (sessionId: string) => {
+    await markSessionAsRead(sessionId, 'admin');
+    setSessions((prev) =>
+      prev.map((s) => (s.sessionId === sessionId ? { ...s, unreadForAdmin: 0 } : s))
+    );
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalSession) return;
+    const targetId = deleteModalSession.sessionId;
+    setDeleteModalSession(null);
+
+    await deleteChatSession(targetId);
+    await loadSessions();
+  };
 
   const filteredSessions = sessions.filter((s) => {
     if (filterUnread && s.unreadForAdmin === 0) return false;
@@ -148,189 +109,223 @@ export const AdminLiveChat: React.FC = () => {
     return true;
   });
 
+  const totalUnread = sessions.reduce((acc, curr) => acc + curr.unreadForAdmin, 0);
+
   return (
-    <div className="bg-[#071910] border border-[#A3E635]/25 rounded-2xl overflow-hidden shadow-2xl text-white min-h-[600px] flex flex-col md:flex-row">
-      {/* Sidebar: Session List */}
-      <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-white/10 bg-[#04140C] flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-white/10 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-[#A3E635]" />
-              <span>Visitor Live Chats</span>
-            </h3>
-
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-950 border border-emerald-500/40 text-[10px] text-emerald-300 font-mono">
-              <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400 animate-pulse" />
-              <span>You: Online</span>
-            </div>
+    <div className="space-y-6 text-white font-sans">
+      {/* HEADER METRICS BAR */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-5 rounded-2xl bg-[#04140C] border border-[#A3E635]/30 flex items-center justify-between shadow-xl">
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-emerald-400">Total Conversations</span>
+            <h3 className="text-2xl font-black text-white">{sessions.length}</h3>
           </div>
-
-          {/* Search & Filter */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-emerald-600" />
-              <input
-                type="text"
-                placeholder="Search visitor or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/40 border border-white/10 focus:border-[#A3E635] text-white text-xs outline-none placeholder:text-emerald-800"
-              />
-            </div>
-            <button
-              onClick={() => setFilterUnread(!filterUnread)}
-              className={`p-1.5 rounded-xl border transition-colors ${
-                filterUnread
-                  ? 'bg-[#1E5E3A] border-[#A3E635] text-[#A3E635]'
-                  : 'bg-black/30 border-white/10 text-emerald-400 hover:text-white'
-              }`}
-              title={filterUnread ? 'Showing Unread Only' : 'Filter Unread'}
-            >
-              <Filter className="w-3.5 h-3.5" />
-            </button>
+          <div className="w-12 h-12 rounded-2xl bg-[#1E5E3A]/40 border border-[#A3E635]/40 text-[#A3E635] flex items-center justify-center">
+            <MessageSquare className="w-6 h-6" />
           </div>
         </div>
 
-        {/* List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-white/5">
+        <div className="p-5 rounded-2xl bg-[#04140C] border border-[#A3E635]/30 flex items-center justify-between shadow-xl">
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-emerald-400">Unread Visitor Messages</span>
+            <h3 className="text-2xl font-black text-white">{totalUnread}</h3>
+          </div>
+          <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${totalUnread > 0 ? 'bg-red-950/80 border-red-500 text-red-400 animate-pulse' : 'bg-[#1E5E3A]/40 border-[#A3E635]/40 text-[#A3E635]'}`}>
+            <AlertCircle className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[#04140C] border border-[#A3E635]/30 flex items-center justify-between shadow-xl">
+          <div className="space-y-1">
+            <span className="text-xs font-mono text-emerald-400">Your Live Status</span>
+            <div className="flex items-center gap-2 pt-1">
+              <Circle className="w-3 h-3 fill-emerald-400 text-emerald-400 animate-pulse" />
+              <span className="text-sm font-bold text-emerald-300">Admin Online</span>
+            </div>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-[#1E5E3A]/40 border border-[#A3E635]/40 text-[#A3E635] flex items-center justify-center">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
+      {/* FILTER & SEARCH CONTROL BAR */}
+      <div className="bg-[#04140C] border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+        <div className="relative w-full md:w-80">
+          <Search className="w-4 h-4 absolute left-3.5 top-3 text-emerald-600" />
+          <input
+            type="text"
+            placeholder="Search visitor name, email, or message..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-black/40 border border-white/10 focus:border-[#A3E635] text-white text-xs outline-none placeholder:text-emerald-800"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+          <button
+            onClick={() => setFilterUnread(!filterUnread)}
+            className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              filterUnread
+                ? 'bg-[#1E5E3A] border-[#A3E635] text-[#A3E635]'
+                : 'bg-black/30 border-white/10 text-emerald-300 hover:text-white'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            <span>{filterUnread ? 'Showing Unread Only' : 'All Conversations'}</span>
+          </button>
+
+          <button
+            onClick={loadSessions}
+            className="p-2 rounded-xl bg-black/40 hover:bg-white/10 border border-white/10 text-emerald-300 hover:text-white transition-colors cursor-pointer"
+            title="Refresh List"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* VISITOR CONVERSATIONS LIST */}
+      <div className="bg-[#071910] border border-[#A3E635]/30 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="p-4 bg-[#04140C] border-b border-white/10 flex items-center justify-between">
+          <h3 className="font-bold text-sm text-white flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-[#A3E635]" />
+            <span>Visitor Message Records ({filteredSessions.length})</span>
+          </h3>
+          <p className="text-xs text-emerald-300/80 hidden sm:block">
+            Click <strong className="text-[#A3E635]">"Chat with Visitor"</strong> to open the live bottom-right chat box for any person.
+          </p>
+        </div>
+
+        <div className="divide-y divide-white/5">
           {isLoading ? (
-            <div className="p-8 text-center text-xs text-emerald-400/60 font-mono">Loading sessions...</div>
+            <div className="p-12 text-center text-xs text-emerald-400/60 font-mono">Loading visitor chats...</div>
           ) : filteredSessions.length === 0 ? (
-            <div className="p-8 text-center text-xs text-emerald-400/60 font-mono">
-              {searchTerm || filterUnread ? 'No matching chats found.' : 'No active chats yet.'}
+            <div className="p-12 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-white/5 mx-auto flex items-center justify-center text-emerald-600">
+                <MessageSquare className="w-6 h-6" />
+              </div>
+              <p className="text-xs text-emerald-400/70 font-mono">
+                {searchTerm || filterUnread ? 'No matching visitor messages found.' : 'No active visitor conversations logged yet.'}
+              </p>
             </div>
           ) : (
-            filteredSessions.map((s) => {
-              const isSelected = s.sessionId === selectedSessionId;
-              return (
-                <button
-                  key={s.sessionId}
-                  onClick={() => setSelectedSessionId(s.sessionId)}
-                  className={`w-full text-left p-3.5 transition-all flex items-start gap-3 hover:bg-white/5 ${
-                    isSelected ? 'bg-[#1E5E3A]/40 border-l-4 border-[#A3E635]' : ''
-                  }`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-[#0B2B1B] border border-[#A3E635]/30 text-[#A3E635] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                    {s.userName.charAt(0).toUpperCase()}
+            filteredSessions.map((session) => (
+              <div
+                key={session.sessionId}
+                className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/5 transition-all group"
+              >
+                {/* Visitor Info & Message Snippet */}
+                <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                  <div className="w-11 h-11 rounded-2xl bg-[#0B2B1B] border border-[#A3E635]/40 text-[#A3E635] flex items-center justify-center font-black text-sm shrink-0 shadow-lg">
+                    {session.userName.charAt(0).toUpperCase()}
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="font-bold text-xs text-white truncate">{s.userName}</span>
-                      <span className="text-[10px] text-emerald-500 shrink-0">
-                        {new Date(s.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-bold text-sm text-white">{session.userName}</h4>
+                      {session.unreadForAdmin > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-extrabold animate-bounce">
+                          {session.unreadForAdmin} Unread
+                        </span>
+                      )}
+                      <span className="text-[10px] font-mono text-emerald-500/80 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(session.lastMessageTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
                     </div>
 
-                    {s.userEmail && <p className="text-[10px] text-emerald-400/70 truncate">{s.userEmail}</p>}
+                    {session.userEmail ? (
+                      <p className="text-xs text-emerald-300/80 flex items-center gap-1.5 truncate">
+                        <Mail className="w-3.5 h-3.5 text-[#A3E635]" />
+                        <span>{session.userEmail}</span>
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-emerald-600 italic">Guest Visitor (No email registered)</p>
+                    )}
 
-                    <p className="text-xs text-emerald-200/60 truncate mt-1">{s.lastMessage}</p>
+                    <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-xs text-emerald-100/90 leading-relaxed mt-2 max-w-2xl break-words">
+                      "{session.lastMessage}"
+                    </div>
                   </div>
+                </div>
 
-                  {s.unreadForAdmin > 0 && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold shrink-0">
-                      {s.unreadForAdmin}
-                    </span>
+                {/* Direct Action Buttons */}
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <button
+                    onClick={() => handleOpenChatBox(session)}
+                    className="px-4 py-2.5 rounded-xl bg-[#A3E635] hover:bg-[#b8f048] text-[#0B2B1B] font-extrabold text-xs transition-all flex items-center gap-2 shadow-lg active:scale-95 cursor-pointer"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Chat with Visitor</span>
+                  </button>
+
+                  {session.unreadForAdmin > 0 && (
+                    <button
+                      onClick={() => handleMarkAsRead(session.sessionId)}
+                      className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 transition-colors cursor-pointer"
+                      title="Mark as Read"
+                    >
+                      <CheckCheck className="w-4 h-4" />
+                    </button>
                   )}
-                </button>
-              );
-            })
+
+                  <button
+                    onClick={() => setDeleteModalSession(session)}
+                    className="p-2.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-400 hover:bg-red-900/80 transition-colors cursor-pointer"
+                    title="Delete Conversation"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>
 
-      {/* Main Chat Conversation View */}
-      <div className="flex-1 flex flex-col bg-[#071910]">
-        {selectedSession ? (
-          <>
-            {/* Session Header */}
-            <div className="p-4 bg-[#04140C] border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#1E5E3A] border border-[#A3E635]/40 text-[#A3E635] flex items-center justify-center font-bold text-sm">
-                  {selectedSession.userName.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                    {selectedSession.userName}
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-emerald-950 border border-emerald-500/30 text-emerald-300">
-                      ID: {selectedSession.sessionId.substring(0, 10)}
-                    </span>
-                  </h4>
-                  {selectedSession.userEmail ? (
-                    <div className="flex items-center gap-1 text-xs text-emerald-300">
-                      <Mail className="w-3 h-3 text-[#A3E635]" />
-                      <span>{selectedSession.userEmail}</span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-emerald-500">Guest Visitor</span>
-                  )}
-                </div>
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteModalSession && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
+          <div className="bg-[#0A2216] border border-red-500/50 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden ring-1 ring-red-500/30">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-950 text-red-400 border border-red-500/40 flex items-center justify-center shrink-0 shadow-lg">
+                <Trash2 className="w-6 h-6" />
               </div>
-
-              <button
-                onClick={loadSessions}
-                className="p-2 rounded-xl bg-black/40 hover:bg-white/10 text-emerald-300 border border-white/10 transition-colors"
-                title="Refresh conversation"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
+              <div>
+                <h3 className="font-bold text-lg text-white">Delete Visitor Chat</h3>
+                <p className="text-xs text-red-200/80">InsForge Chat Removal</p>
+              </div>
             </div>
 
-            {/* Conversation Messages */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#04140C]/30 text-xs">
-              {messages.map((m) => {
-                const isAdmin = m.senderRole === 'admin';
-                return (
-                  <div key={m.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
-                    <div className="flex items-center gap-1.5 mb-1 px-1">
-                      <span className="text-[10px] font-mono text-emerald-400/80">
-                        {isAdmin ? 'You (Admin)' : m.senderName}
-                      </span>
-                      <span className="text-[9px] text-emerald-600">
-                        {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <div
-                      className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed break-words shadow-sm ${
-                        isAdmin
-                          ? 'bg-[#1E5E3A] text-white rounded-br-none border border-[#A3E635]/40'
-                          : 'bg-[#0B2B1B] text-emerald-100 rounded-bl-none border border-emerald-500/30'
-                      }`}
-                    >
-                      {m.message}
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
+            <div className="p-4 rounded-2xl bg-black/50 border border-white/10 text-xs space-y-2">
+              <p className="text-emerald-200/90 leading-relaxed">
+                Are you sure you want to permanently delete chat session for <strong className="text-white">"{deleteModalSession.userName}"</strong>?
+              </p>
+              <p className="text-[11px] text-red-300/80 italic">
+                All messages in this session will be permanently removed from InsForge.
+              </p>
             </div>
 
-            {/* Reply Bar */}
-            <form onSubmit={handleSendReply} className="p-3 bg-[#04140C] border-t border-white/10 flex items-center gap-2">
-              <input
-                type="text"
-                placeholder={`Reply to ${selectedSession.userName}...`}
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 focus:border-[#A3E635] text-white text-xs outline-none placeholder:text-emerald-700"
-              />
+            <div className="flex items-center gap-3 pt-2">
               <button
-                type="submit"
-                disabled={!replyText.trim()}
-                className="px-4 py-2.5 rounded-xl bg-[#1E5E3A] hover:bg-[#287A4B] disabled:opacity-40 text-[#A3E635] font-bold text-xs border border-[#A3E635]/40 transition-all flex items-center gap-1.5 active:scale-95"
+                type="button"
+                onClick={() => setDeleteModalSession(null)}
+                className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer"
               >
-                <Send className="w-4 h-4" />
-                <span>Send Reply</span>
+                Cancel
               </button>
-            </form>
-          </>
-        ) : (
-          <div className="flex-1 flex flex-col justify-center items-center p-8 text-center text-emerald-400/60 font-mono text-xs">
-            Select a visitor conversation from the left sidebar to start live chatting.
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 transition-transform active:scale-95 cursor-pointer"
+              >
+                Yes, Delete Chat
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

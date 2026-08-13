@@ -273,8 +273,29 @@ export const markSessionAsRead = async (sessionId: string, roleReading: 'admin' 
   }
 };
 
+// Delete an entire chat session
+export const deleteChatSession = async (sessionId: string) => {
+  const local = getLocalMessages();
+  const updated = local.filter((m) => m.sessionId !== sessionId);
+  saveLocalMessages(updated);
+
+  try {
+    await insforge.database
+      .from('chat_messages')
+      .delete()
+      .eq('session_id', sessionId);
+  } catch (err) {
+    console.warn('InsForge delete chat_messages failed:', err);
+  }
+
+  if (chatChannel) {
+    chatChannel.postMessage({ type: 'SESSION_DELETED', sessionId });
+  }
+  window.dispatchEvent(new CustomEvent('napoleon-chat-session-deleted', { detail: { sessionId } }));
+};
+
 // Subscribe to chat updates
-export const subscribeToChatUpdates = (callback: (data: { type: string; message?: ChatMessage }) => void) => {
+export const subscribeToChatUpdates = (callback: (data: { type: string; message?: ChatMessage; sessionId?: string }) => void) => {
   const handleBroadcast = (event: MessageEvent) => {
     if (event.data) {
       callback(event.data);
@@ -288,15 +309,24 @@ export const subscribeToChatUpdates = (callback: (data: { type: string; message?
     }
   };
 
+  const handleDeleteEvent = (event: Event) => {
+    const custom = event as CustomEvent;
+    if (custom.detail) {
+      callback({ type: 'SESSION_DELETED', sessionId: custom.detail.sessionId });
+    }
+  };
+
   if (chatChannel) {
     chatChannel.addEventListener('message', handleBroadcast);
   }
   window.addEventListener('napoleon-new-chat-message', handleCustomEvent);
+  window.addEventListener('napoleon-chat-session-deleted', handleDeleteEvent);
 
   return () => {
     if (chatChannel) {
       chatChannel.removeEventListener('message', handleBroadcast);
     }
     window.removeEventListener('napoleon-new-chat-message', handleCustomEvent);
+    window.removeEventListener('napoleon-chat-session-deleted', handleDeleteEvent);
   };
 };
