@@ -3,10 +3,11 @@ import { motion } from 'motion/react';
 import { 
   Sprout, ArrowRight, MapPin, Tractor, ShieldCheck, Leaf, Activity, 
   ChevronRight, Phone, Award, Globe, Building2, Cpu, CheckCircle2, 
-  BarChart3, Sparkles, Compass, Wheat, Factory, Truck, Users, Droplets
+  BarChart3, Sparkles, Compass, Wheat, Factory, Truck, Users, Droplets,
+  Camera, Play, Youtube, Image as ImageIcon, X, ChevronLeft
 } from 'lucide-react';
 import { COMPANY_INFO, FARMS_DATA, PRODUCTS_DATA, PROJECTS_DATA, NEWS_DATA } from '../data/companyData';
-import { getProducts, getPublishedBlogPosts, ProductData, BlogPostData } from '../lib/insforge';
+import { getProducts, getPublishedBlogPosts, getPublishedGalleryItems, ProductData, GalleryItemData } from '../lib/insforge';
 import { Reveal } from '../components/animations/Reveal';
 import { ImageReveal } from '../components/animations/ImageReveal';
 import { AnimatedHeading } from '../components/animations/AnimatedHeading';
@@ -23,6 +24,18 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   const [activeAgCategory, setActiveAgCategory] = useState<'crops' | 'livestock' | 'horticulture' | 'processing'>('crops');
   const [featuredProducts, setFeaturedProducts] = useState<ProductData[]>(PRODUCTS_DATA as any);
   const [latestArticles, setLatestArticles] = useState<any[]>(NEWS_DATA);
+  const [galleryItems, setGalleryItems] = useState<GalleryItemData[]>([]);
+  const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
+  const [galleryFilter, setGalleryFilter] = useState<'all' | 'image' | 'youtube'>('all');
+
+  const loadGallery = async () => {
+    try {
+      const data = await getPublishedGalleryItems();
+      setGalleryItems(data);
+    } catch (err) {
+      console.warn('Failed to fetch published gallery items on Home:', err);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -38,7 +51,20 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       }
     }).catch(() => {});
 
-    return () => { isMounted = false; };
+    loadGallery();
+
+    const handleGalleryUpdate = () => {
+      loadGallery();
+    };
+
+    window.addEventListener('gallery-items-updated', handleGalleryUpdate);
+    window.addEventListener('storage', handleGalleryUpdate);
+
+    return () => { 
+      isMounted = false;
+      window.removeEventListener('gallery-items-updated', handleGalleryUpdate);
+      window.removeEventListener('storage', handleGalleryUpdate);
+    };
   }, []);
 
   const agCategories = {
@@ -632,6 +658,196 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* HOMEPAGE MEDIA & VISUAL GALLERY SECTION */}
+      <section className="bg-gradient-to-b from-[#061A10] via-[#0B2B1B] to-[#04120B] text-white py-24 border-y border-[#1E5E3A]/40 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1E5E3A] text-[#A3E635] text-xs font-bold uppercase tracking-wider mb-2 border border-[#A3E635]/30">
+                <Camera className="w-4 h-4" />
+                <span>Visual Portfolio & Video Features</span>
+              </div>
+              <AnimatedHeading
+                text="Media, Photography & Video Gallery"
+                className="font-editorial text-3xl sm:text-5xl font-bold text-white"
+              />
+              <p className="mt-2 text-emerald-100/80 text-sm max-w-xl">
+                Explore high-resolution photography and video tours showcasing our Volta Region farm estates, livestock, machinery, and community impact.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Type Filter Buttons */}
+              <div className="inline-flex p-1 bg-[#061A10] rounded-xl border border-[#1E5E3A]/60">
+                <button
+                  onClick={() => setGalleryFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    galleryFilter === 'all'
+                      ? 'bg-[#1E5E3A] text-[#A3E635]'
+                      : 'text-emerald-300 hover:text-white'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setGalleryFilter('image')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    galleryFilter === 'image'
+                      ? 'bg-[#1E5E3A] text-[#A3E635]'
+                      : 'text-emerald-300 hover:text-white'
+                  }`}
+                >
+                  Photos
+                </button>
+                <button
+                  onClick={() => setGalleryFilter('youtube')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    galleryFilter === 'youtube'
+                      ? 'bg-[#1E5E3A] text-[#A3E635]'
+                      : 'text-emerald-300 hover:text-white'
+                  }`}
+                >
+                  Videos
+                </button>
+              </div>
+
+              <button
+                onClick={() => onNavigate('/gallery')}
+                className="px-5 py-2.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-md cursor-pointer"
+              >
+                <span>Full Gallery</span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            </div>
+          </div>
+
+          {/* Gallery Items Grid */}
+          {(() => {
+            const displayed = galleryItems.filter((item) => {
+              if (galleryFilter === 'all') return true;
+              return item.type === galleryFilter;
+            }).slice(0, 8); // Top 8 latest published items
+
+            if (displayed.length === 0) {
+              return (
+                <div className="py-12 text-center bg-[#0B2B1B]/50 rounded-2xl border border-[#1E5E3A]/40 p-6">
+                  <Camera className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-white">No media found in this filter.</p>
+                  <button
+                    onClick={() => onNavigate('/gallery')}
+                    className="mt-3 text-xs text-[#A3E635] font-bold underline cursor-pointer"
+                  >
+                    View All Media Portfolio
+                  </button>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {displayed.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    onClick={() => setActiveLightboxIndex(idx)}
+                    className="group relative rounded-2xl overflow-hidden bg-black aspect-4/3 cursor-pointer border border-[#1E5E3A]/60 shadow-xl hover:border-[#A3E635]/60 transition-all duration-300 hover:-translate-y-1"
+                  >
+                    <img
+                      src={item.thumbnailUrl || item.imageUrl}
+                      alt={item.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"
+                      referrerPolicy="no-referrer"
+                    />
+
+                    {/* YouTube Play Icon Overlay */}
+                    {item.type === 'youtube' && (
+                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                        <div className="w-11 h-11 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                          <Play className="w-5 h-5 fill-current ml-0.5" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Badge */}
+                    <div className="absolute top-2.5 right-2.5 z-10">
+                      {item.type === 'youtube' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-red-400 text-[10px] font-bold border border-red-500/40">
+                          <Youtube className="w-3 h-3 text-red-500" />
+                          <span>Video</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-[#A3E635] text-[10px] font-bold border border-[#A3E635]/40">
+                          <ImageIcon className="w-3 h-3" />
+                          <span>Photo</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Caption Hover Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-3.5 flex flex-col justify-end text-white">
+                      <span className="text-[10px] uppercase font-bold text-[#A3E635]">
+                        {item.category}
+                      </span>
+                      <h4 className="font-editorial text-xs sm:text-sm font-bold line-clamp-1">{item.title}</h4>
+                      {item.location && (
+                        <p className="text-[10px] text-emerald-200/80 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-[#A3E635]" />
+                          <span>{item.location}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* LIGHTBOX / YOUTUBE MODAL ON HOME */}
+        {activeLightboxIndex !== null && galleryItems[activeLightboxIndex] && (
+          <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-8">
+            <button
+              onClick={() => setActiveLightboxIndex(null)}
+              className="absolute top-6 right-6 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors z-50 cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="max-w-4xl w-full flex flex-col items-center">
+              {galleryItems[activeLightboxIndex].type === 'youtube' && galleryItems[activeLightboxIndex].youtubeVideoId ? (
+                <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/20">
+                  <iframe
+                    title={galleryItems[activeLightboxIndex].title}
+                    src={`https://www.youtube.com/embed/${galleryItems[activeLightboxIndex].youtubeVideoId}?autoplay=1`}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <img
+                  src={galleryItems[activeLightboxIndex].imageUrl || galleryItems[activeLightboxIndex].thumbnailUrl}
+                  alt={galleryItems[activeLightboxIndex].title}
+                  className="max-h-[70vh] w-auto object-contain rounded-2xl shadow-2xl"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+
+              <div className="mt-4 text-center max-w-xl text-white">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#A3E635]">
+                  {galleryItems[activeLightboxIndex].category} {galleryItems[activeLightboxIndex].location ? `• ${galleryItems[activeLightboxIndex].location}` : ''}
+                </span>
+                <h3 className="font-editorial text-lg sm:text-xl font-bold mt-1">{galleryItems[activeLightboxIndex].title}</h3>
+                {galleryItems[activeLightboxIndex].description && (
+                  <p className="text-xs text-emerald-200/80 mt-1">{galleryItems[activeLightboxIndex].description}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* AFRICAN AGRICULTURE EDITORIAL STORY SECTION */}

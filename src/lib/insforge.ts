@@ -1096,10 +1096,10 @@ export const getAllGalleryItemsAdmin = async (): Promise<GalleryItemData[]> => {
       .database
       .from('gallery_items')
       .select('*')
-      .order('display_order', { ascending: true });
+      .order('updated_at', { ascending: false });
 
     if (!error && data && data.length > 0) {
-      return data.map((item: any) => ({
+      const mapped = data.map((item: any) => ({
         id: item.id,
         type: item.type || (item.youtube_url ? 'youtube' : 'image'),
         title: item.title,
@@ -1113,8 +1113,15 @@ export const getAllGalleryItemsAdmin = async (): Promise<GalleryItemData[]> => {
         isPublished: item.is_published !== undefined ? Boolean(item.is_published) : true,
         displayOrder: item.display_order ?? 0,
         createdAt: item.created_at || new Date().toISOString(),
-        updatedAt: item.updated_at || new Date().toISOString(),
+        updatedAt: item.updated_at || item.created_at || new Date().toISOString(),
       }));
+
+      // Sort latest created/updated first
+      return mapped.sort((a, b) => {
+        const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
     }
   } catch (err) {
     console.warn('InsForge fetch gallery failed, reading local state:', err);
@@ -1123,7 +1130,12 @@ export const getAllGalleryItemsAdmin = async (): Promise<GalleryItemData[]> => {
   const localRaw = localStorage.getItem(STORAGE_KEYS.GALLERY_ITEMS);
   if (localRaw) {
     try {
-      return JSON.parse(localRaw);
+      const parsed: GalleryItemData[] = JSON.parse(localRaw);
+      return parsed.sort((a, b) => {
+        const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
     } catch {}
   }
 
@@ -1135,7 +1147,11 @@ export const getPublishedGalleryItems = async (): Promise<GalleryItemData[]> => 
   const all = await getAllGalleryItemsAdmin();
   return all
     .filter(item => item.isPublished)
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+    .sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return timeB - timeA; // Latest first
+    });
 };
 
 export const saveGalleryItem = async (itemData: Partial<GalleryItemData>): Promise<GalleryItemData> => {
@@ -1171,6 +1187,7 @@ export const saveGalleryItem = async (itemData: Partial<GalleryItemData>): Promi
     }
   }
 
+  const nowIso = new Date().toISOString();
   const savedItem: GalleryItemData = {
     id: itemData.id || `gal-${Date.now()}`,
     type,
@@ -1184,8 +1201,8 @@ export const saveGalleryItem = async (itemData: Partial<GalleryItemData>): Promi
     location,
     isPublished,
     displayOrder,
-    createdAt: existing?.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: existing?.createdAt || nowIso,
+    updatedAt: nowIso,
   };
 
   try {
@@ -1213,10 +1230,14 @@ export const saveGalleryItem = async (itemData: Partial<GalleryItemData>): Promi
   if (idx >= 0) {
     current[idx] = savedItem;
   } else {
-    current.unshift(savedItem);
+    current.unshift(savedItem); // Place new item at top
   }
 
+  // Sort again by updatedAt/createdAt descending
+  current.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime());
+
   localStorage.setItem(STORAGE_KEYS.GALLERY_ITEMS, JSON.stringify(current));
+  window.dispatchEvent(new Event('gallery-items-updated'));
   return savedItem;
 };
 
@@ -1230,6 +1251,7 @@ export const deleteGalleryItem = async (id: string) => {
   const current = await getAllGalleryItemsAdmin();
   const filtered = current.filter(i => i.id !== id);
   localStorage.setItem(STORAGE_KEYS.GALLERY_ITEMS, JSON.stringify(filtered));
+  window.dispatchEvent(new Event('gallery-items-updated'));
 };
 
 export const toggleGalleryItemPublished = async (id: string, isPublished: boolean) => {

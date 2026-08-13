@@ -32,6 +32,18 @@ export const GalleryPage: React.FC = () => {
 
   useEffect(() => {
     loadPublishedGallery();
+
+    const handleUpdate = () => {
+      loadPublishedGallery();
+    };
+
+    window.addEventListener('gallery-items-updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener('gallery-items-updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   const loadPublishedGallery = async () => {
