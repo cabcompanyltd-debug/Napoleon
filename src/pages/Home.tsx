@@ -15,6 +15,9 @@ import { StatCounter } from '../components/animations/StatCounter';
 import { TelemetryWidget } from '../components/home/TelemetryWidget';
 import { YieldCalculator } from '../components/home/YieldCalculator';
 import { NewsTicker } from '../components/home/NewsTicker';
+import { VoltaWeatherWidget } from '../components/widgets/VoltaWeatherWidget';
+import { HarvestCalendarWidget } from '../components/widgets/HarvestCalendarWidget';
+import { QuoteCalculatorModal } from '../components/commerce/QuoteCalculatorModal';
 
 interface HomeProps {
   onNavigate: (route: string) => void;
@@ -28,6 +31,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
   const [galleryFilter, setGalleryFilter] = useState<'all' | 'image' | 'youtube'>('all');
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const [isQuoteOpen, setIsQuoteOpen] = useState(false);
 
   const loadGallery = async () => {
     try {
@@ -593,6 +597,14 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
         </div>
       </section>
 
+      {/* REGIONAL WEATHER TELEMETRY & HARVEST CALENDAR WIDGETS */}
+      <section className="bg-[#04120B] text-white py-16 border-b border-[#1E5E3A]/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <VoltaWeatherWidget />
+          <HarvestCalendarWidget onOpenQuoteModal={() => setIsQuoteOpen(true)} />
+        </div>
+      </section>
+
       {/* PRODUCTS CATALOG HIGHLIGHTS */}
       <section className="bg-gradient-to-b from-[#F5F8F4] via-[#FFFFFF] to-[#F5F8F4] text-[#132A13] py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1008,6 +1020,12 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           </Reveal>
         </div>
       </section>
+
+      {/* WHOLESALE QUOTE CALCULATOR MODAL */}
+      <QuoteCalculatorModal
+        isOpen={isQuoteOpen}
+        onClose={() => setIsQuoteOpen(false)}
+      />
     </div>
   );
 };

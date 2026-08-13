@@ -112,6 +112,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
       route: '/insights',
       sublinks: [
         { name: 'Company News & Insights', route: '/insights' },
+        { name: 'Investor Relations', route: '/investors' },
+        { name: 'Outgrower Scheme', route: '/outgrowers' },
+        { name: 'Export & Logistics', route: '/export' },
+        { name: 'Produce Traceability', route: '/traceability' },
         { name: 'Photo & Video Gallery', route: '/gallery' },
         { name: 'Frequently Asked Questions', route: '/faq' }
       ]

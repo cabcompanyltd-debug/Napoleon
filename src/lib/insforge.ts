@@ -84,6 +84,179 @@ export interface ProductData {
   createdAt?: string;
 }
 
+export interface CommercialQuoteRequest {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  cropType: string;
+  quantityTonnes: number;
+  destination: string;
+  estimatedPriceUsd?: number;
+  notes?: string;
+  status: 'pending' | 'quoted' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export interface OutgrowerApplication {
+  id: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  community: string;
+  district: string;
+  landSizeAcres: number;
+  preferredCrops: string[];
+  experienceYears: number;
+  status: 'pending' | 'reviewed' | 'accepted' | 'declined';
+  createdAt: string;
+}
+
+export interface TraceabilityBatch {
+  batchCode: string;
+  cropName: string;
+  variety: string;
+  farmSite: string;
+  district: string;
+  coordinates: string;
+  plantingDate: string;
+  harvestDate: string;
+  processingDate: string;
+  packagingDate: string;
+  soilType: string;
+  moisturePercentage: number;
+  qualityGrade: string;
+  certifications: string[];
+  farmerLead: string;
+  qrCodeUrl?: string;
+}
+
+export const SAMPLE_BATCHES: TraceabilityBatch[] = [
+  {
+    batchCode: 'NS-VOLTA-2026-CASSAVA-01',
+    cropName: 'High-Starch Industrial Cassava',
+    variety: 'Ampong Super Yield',
+    farmSite: 'Adidome Central Estate',
+    district: 'Central Tongu, Volta Region',
+    coordinates: '6.0712° N, 0.6033° E',
+    plantingDate: '2025-05-15',
+    harvestDate: '2026-06-20',
+    processingDate: '2026-06-21',
+    packagingDate: '2026-06-22',
+    soilType: 'Volta Basin Loamy Silt',
+    moisturePercentage: 11.8,
+    qualityGrade: 'Grade A Export Standard',
+    certifications: ['Ghana FDA Food Safety', 'GlobalG.A.P. Compliant', 'AFA Traceability Certified'],
+    farmerLead: 'Kofi Mensah & Outgrower Cluster 4',
+  },
+  {
+    batchCode: 'NS-SO-2026-CHILI-04',
+    cropName: 'Scotch Bonnet & Birdseye Chili',
+    variety: 'Kpakpo Shito Flame',
+    farmSite: 'Sogakope Irrigation Field 2',
+    district: 'South Tongu, Volta Region',
+    coordinates: '5.9984° N, 0.5982° E',
+    plantingDate: '2025-11-01',
+    harvestDate: '2026-03-10',
+    processingDate: '2026-03-12',
+    packagingDate: '2026-03-14',
+    soilType: 'Alluvial Riverbed Rich Loam',
+    moisturePercentage: 8.5,
+    qualityGrade: 'Premium Pungency Grade A1',
+    certifications: ['Phytosanitary Export Seal', 'Ghana FDA Certified', 'Organic Cultivation Standard'],
+    farmerLead: 'Esi Dagadu',
+  },
+  {
+    batchCode: 'NS-HO-2026-MAIZE-09',
+    cropName: 'Yellow Kernel Industrial Corn',
+    variety: 'Obatanpa Quality Protein Maize',
+    farmSite: 'Ho Plateau Valley Sector B',
+    district: 'Ho Municipal, Volta Region',
+    coordinates: '6.6008° N, 0.4713° E',
+    plantingDate: '2025-08-20',
+    harvestDate: '2025-12-18',
+    processingDate: '2025-12-20',
+    packagingDate: '2025-12-22',
+    soilType: 'Volta Clay-Silt High Nitrogen',
+    moisturePercentage: 12.2,
+    qualityGrade: 'Aflatoxin-Free Certified Feed & Flour Grade',
+    certifications: ['FDA Grain Clearance', 'AFA Seed Quality Certified'],
+    farmerLead: 'Sename Agbeko',
+  },
+];
+
+export const getBatchInfo = (code: string): TraceabilityBatch | undefined => {
+  const clean = code.trim().toUpperCase();
+  return SAMPLE_BATCHES.find(b => b.batchCode.toUpperCase() === clean);
+};
+
+// Database persistence helpers for Quotes & Outgrower applications
+export const saveCommercialQuote = async (quoteData: Omit<CommercialQuoteRequest, 'id' | 'status' | 'createdAt'>) => {
+  const newQuote: CommercialQuoteRequest = {
+    ...quoteData,
+    id: `quote-${Date.now()}`,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    await insforge.database.from('commercial_quotes').insert([{
+      id: newQuote.id,
+      company_name: newQuote.companyName,
+      contact_name: newQuote.contactName,
+      email: newQuote.email,
+      phone: newQuote.phone,
+      crop_type: newQuote.cropType,
+      quantity_tonnes: newQuote.quantityTonnes,
+      destination: newQuote.destination,
+      estimated_price_usd: newQuote.estimatedPriceUsd,
+      notes: newQuote.notes,
+      status: newQuote.status,
+      created_at: newQuote.createdAt,
+    }]);
+  } catch (err) {
+    console.warn('InsForge insert quote warning:', err);
+  }
+
+  const existing = JSON.parse(localStorage.getItem('napoleon_commercial_quotes') || '[]');
+  existing.unshift(newQuote);
+  localStorage.setItem('napoleon_commercial_quotes', JSON.stringify(existing));
+  return newQuote;
+};
+
+export const saveOutgrowerApplication = async (appData: Omit<OutgrowerApplication, 'id' | 'status' | 'createdAt'>) => {
+  const newApp: OutgrowerApplication = {
+    ...appData,
+    id: `outgrower-${Date.now()}`,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    await insforge.database.from('outgrower_applications').insert([{
+      id: newApp.id,
+      full_name: newApp.fullName,
+      phone: newApp.phone,
+      email: newApp.email,
+      community: newApp.community,
+      district: newApp.district,
+      land_size_acres: newApp.landSizeAcres,
+      preferred_crops: newApp.preferredCrops,
+      experience_years: newApp.experienceYears,
+      status: newApp.status,
+      created_at: newApp.createdAt,
+    }]);
+  } catch (err) {
+    console.warn('InsForge insert outgrower app warning:', err);
+  }
+
+  const existing = JSON.parse(localStorage.getItem('napoleon_outgrower_apps') || '[]');
+  existing.unshift(newApp);
+  localStorage.setItem('napoleon_outgrower_apps', JSON.stringify(existing));
+  return newApp;
+};
+
 export interface GalleryItemData {
   id: string;
   type: 'image' | 'youtube';

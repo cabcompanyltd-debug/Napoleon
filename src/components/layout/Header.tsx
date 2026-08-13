@@ -41,6 +41,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const mediaSublinks = [
     { name: 'Commercial Projects', route: '/projects', desc: 'Silos, cold storage & solar irrigation', icon: FolderKanban },
+    { name: 'Investor Relations', route: '/investors', desc: 'Financial overview & ESG impact stats', icon: ShieldCheck },
+    { name: 'Outgrower Scheme', route: '/outgrowers', desc: 'Volta smallholder farmer contract scheme', icon: Briefcase },
+    { name: 'Export & Logistics', route: '/export', desc: 'Tema Port shipping & cold chain', icon: FolderKanban },
+    { name: 'Produce Traceability', route: '/traceability', desc: 'Verify farm lot & quality passport', icon: ShieldCheck },
     { name: 'News & Insights', route: '/insights', desc: 'Industry analysis & operational updates', icon: BookOpen },
     { name: 'Careers & Team', route: '/careers', desc: 'Join agricultural leaders in Ghana', icon: Briefcase },
     { name: 'Photo & Video Gallery', route: '/gallery', desc: 'High-res visuals from Volta farms', icon: Camera }

@@ -37,10 +37,15 @@ import { ArticleDetailPage } from './pages/ArticleDetailPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CareersPage } from './pages/CareersPage';
 import { PartnershipsPage } from './pages/PartnershipsPage';
+import { InvestorRelationsPage } from './pages/InvestorRelationsPage';
+import { OutgrowerPage } from './pages/OutgrowerPage';
+import { ExportLogisticsPage } from './pages/ExportLogisticsPage';
+import { TraceabilityPage } from './pages/TraceabilityPage';
 import { ContactPage } from './pages/ContactPage';
 import { FaqPage } from './pages/FaqPage';
 import { LegalPages } from './pages/LegalPages';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { WhatsAppFloatingButton } from './components/commerce/WhatsAppFloatingButton';
 
 const getCleanRoute = (): string => {
   try {
@@ -203,8 +208,24 @@ export default function App() {
       return <CareersPage onNavigate={navigate} />;
     }
 
-    if (basePath === '/partnerships' || basePath === '/investors' || basePath === '/investment') {
+    if (basePath === '/partnerships') {
       return <PartnershipsPage onNavigate={navigate} />;
+    }
+
+    if (basePath === '/investors' || basePath === '/investment' || basePath === '/investor-relations') {
+      return <InvestorRelationsPage onNavigate={navigate} />;
+    }
+
+    if (basePath === '/outgrowers' || basePath === '/outgrower') {
+      return <OutgrowerPage onNavigate={navigate} />;
+    }
+
+    if (basePath === '/export' || basePath === '/logistics') {
+      return <ExportLogisticsPage onNavigate={navigate} />;
+    }
+
+    if (basePath === '/traceability' || basePath === '/verify') {
+      return <TraceabilityPage onNavigate={navigate} />;
     }
 
     if (basePath === '/contact') {
@@ -277,9 +298,10 @@ export default function App() {
       {/* FOOTER */}
       <Footer onNavigate={navigate} />
 
-      {/* BACK TO TOP, LIVE CHAT & PWA INSTALL PROMPT */}
+      {/* BACK TO TOP, LIVE CHAT, WHATSAPP & PWA INSTALL PROMPT */}
       <BackToTop />
       <LiveChatWidget />
+      <WhatsAppFloatingButton />
       <InstallPrompt />
     </div>
   );
