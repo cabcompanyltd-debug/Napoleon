@@ -84,6 +84,23 @@ export interface ProductData {
   createdAt?: string;
 }
 
+export interface GalleryItemData {
+  id: string;
+  type: 'image' | 'youtube';
+  title: string;
+  description: string;
+  imageUrl?: string;
+  youtubeUrl?: string;
+  youtubeVideoId?: string;
+  thumbnailUrl: string;
+  category: string;
+  location?: string;
+  isPublished: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 const STORAGE_KEYS = {
   AUTH_USER: 'napoleon_auth_user',
   BLOG_POSTS: 'napoleon_blog_posts',
@@ -91,6 +108,7 @@ const STORAGE_KEYS = {
   CONTACT_INQUIRIES: 'napoleon_contact_inquiries',
   PARTNER_INQUIRIES: 'napoleon_partner_inquiries',
   NEWSLETTER: 'napoleon_newsletter',
+  GALLERY_ITEMS: 'napoleon_gallery_items',
 };
 
 // Initial Seed Data for Instant Vibrant Dashboard
@@ -971,4 +989,256 @@ export const deleteProduct = async (id: string) => {
   const filtered = current.filter(p => p.id !== id);
   localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(filtered));
 };
+
+// --- YOUTUBE URL UTILITIES ---
+
+export const extractYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  return null;
+};
+
+export const getYouTubeThumbnailUrl = (videoId: string): string => {
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+};
+
+// --- GALLERY MANAGEMENT API ---
+
+const SEED_GALLERY_ITEMS: GalleryItemData[] = [
+  {
+    id: 'gal-1',
+    type: 'image',
+    title: 'Green Field Maize Canopy at Dawn',
+    description: 'Verdant commercial maize field in Adaklu Plains catching the first morning sun.',
+    imageUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=1200',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
+    category: 'Crops',
+    location: 'Ho Central Commercial Estate, Ghana',
+    isPublished: true,
+    displayOrder: 1,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'gal-yt-1',
+    type: 'youtube',
+    title: 'Smart Precision Drip Irrigation on Lake Volta',
+    description: 'Watch how floating solar pumps and sub-surface fertigation drip lines deliver water directly to crop root zones.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=L_LUpnjgPso',
+    youtubeVideoId: 'L_LUpnjgPso',
+    thumbnailUrl: 'https://img.youtube.com/vi/L_LUpnjgPso/hqdefault.jpg',
+    category: 'Technology',
+    location: 'Kpando Lakeside Hub',
+    isPublished: true,
+    displayOrder: 2,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'gal-2',
+    type: 'image',
+    title: 'Mechanized Combine Harvester Operations',
+    description: 'Modern combine harvester clearing grain acreage during the main harvest season.',
+    imageUrl: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&q=80&w=1200',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&q=80&w=800',
+    category: 'Machinery',
+    location: 'Ho Municipal District',
+    isPublished: true,
+    displayOrder: 3,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'gal-3',
+    type: 'image',
+    title: 'Shade-Net Horticulture Greenhouse',
+    description: 'Climate-controlled greenhouse cultivation producing export-grade bell peppers.',
+    imageUrl: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&q=80&w=1200',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&q=80&w=800',
+    category: 'Technology',
+    location: 'Kpando Lakeside Hub',
+    isPublished: true,
+    displayOrder: 4,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'gal-4',
+    type: 'image',
+    title: 'Pasture-Raised Cattle Grazing',
+    description: 'Healthy pastured cattle under rotational pasture management.',
+    imageUrl: 'https://images.unsplash.com/photo-1546445317-29f4545f9d52?auto=format&fit=crop&q=80&w=1200',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1546445317-29f4545f9d52?auto=format&fit=crop&q=80&w=800',
+    category: 'Farms',
+    location: 'Tongu Integrated Ranch',
+    isPublished: true,
+    displayOrder: 5,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'gal-5',
+    type: 'image',
+    title: 'Volta Region Outgrower Harvest Field Day',
+    description: 'Local smallholder farmers gathering for agronomy training and harvest celebration.',
+    imageUrl: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=1200',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=800',
+    category: 'People',
+    location: 'Adaklu District, Ghana',
+    isPublished: true,
+    displayOrder: 6,
+    createdAt: new Date().toISOString(),
+  }
+];
+
+export const getAllGalleryItemsAdmin = async (): Promise<GalleryItemData[]> => {
+  try {
+    const { data, error } = await insforge
+      .database
+      .from('gallery_items')
+      .select('*')
+      .order('display_order', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      return data.map((item: any) => ({
+        id: item.id,
+        type: item.type || (item.youtube_url ? 'youtube' : 'image'),
+        title: item.title,
+        description: item.description || '',
+        imageUrl: item.image_url || '',
+        youtubeUrl: item.youtube_url || '',
+        youtubeVideoId: item.youtube_video_id || extractYouTubeVideoId(item.youtube_url || '') || '',
+        thumbnailUrl: item.thumbnail_url || item.image_url || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
+        category: item.category || 'Farms',
+        location: item.location || 'Ho, Volta Region',
+        isPublished: item.is_published !== undefined ? Boolean(item.is_published) : true,
+        displayOrder: item.display_order ?? 0,
+        createdAt: item.created_at || new Date().toISOString(),
+        updatedAt: item.updated_at || new Date().toISOString(),
+      }));
+    }
+  } catch (err) {
+    console.warn('InsForge fetch gallery failed, reading local state:', err);
+  }
+
+  const localRaw = localStorage.getItem(STORAGE_KEYS.GALLERY_ITEMS);
+  if (localRaw) {
+    try {
+      return JSON.parse(localRaw);
+    } catch {}
+  }
+
+  localStorage.setItem(STORAGE_KEYS.GALLERY_ITEMS, JSON.stringify(SEED_GALLERY_ITEMS));
+  return SEED_GALLERY_ITEMS;
+};
+
+export const getPublishedGalleryItems = async (): Promise<GalleryItemData[]> => {
+  const all = await getAllGalleryItemsAdmin();
+  return all
+    .filter(item => item.isPublished)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+};
+
+export const saveGalleryItem = async (itemData: Partial<GalleryItemData>): Promise<GalleryItemData> => {
+  let existing: GalleryItemData | undefined;
+  if (itemData.id) {
+    const current = await getAllGalleryItemsAdmin();
+    existing = current.find(i => i.id === itemData.id);
+  }
+
+  const type = itemData.type || existing?.type || 'image';
+  const title = itemData.title || existing?.title || 'Untitled Gallery Item';
+  const description = itemData.description !== undefined ? itemData.description : (existing?.description || '');
+  const category = itemData.category || existing?.category || 'Farms';
+  const location = itemData.location || existing?.location || 'Ho, Volta Region, Ghana';
+  const isPublished = itemData.isPublished !== undefined ? itemData.isPublished : (existing?.isPublished ?? true);
+  const displayOrder = itemData.displayOrder !== undefined ? itemData.displayOrder : (existing?.displayOrder ?? 0);
+
+  let youtubeUrl = itemData.youtubeUrl || existing?.youtubeUrl || '';
+  let youtubeVideoId = itemData.youtubeVideoId || existing?.youtubeVideoId || '';
+  let imageUrl = itemData.imageUrl || existing?.imageUrl || '';
+  let thumbnailUrl = itemData.thumbnailUrl || existing?.thumbnailUrl || '';
+
+  if (type === 'youtube') {
+    if (youtubeUrl && !youtubeVideoId) {
+      youtubeVideoId = extractYouTubeVideoId(youtubeUrl) || '';
+    }
+    if (youtubeVideoId && !thumbnailUrl) {
+      thumbnailUrl = getYouTubeThumbnailUrl(youtubeVideoId);
+    }
+  } else {
+    if (imageUrl && !thumbnailUrl) {
+      thumbnailUrl = imageUrl;
+    }
+  }
+
+  const savedItem: GalleryItemData = {
+    id: itemData.id || `gal-${Date.now()}`,
+    type,
+    title,
+    description,
+    imageUrl,
+    youtubeUrl,
+    youtubeVideoId,
+    thumbnailUrl: thumbnailUrl || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
+    category,
+    location,
+    isPublished,
+    displayOrder,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    await insforge.database.from('gallery_items').upsert([{
+      id: savedItem.id,
+      type: savedItem.type,
+      title: savedItem.title,
+      description: savedItem.description,
+      image_url: savedItem.imageUrl,
+      youtube_url: savedItem.youtubeUrl,
+      youtube_video_id: savedItem.youtubeVideoId,
+      thumbnail_url: savedItem.thumbnailUrl,
+      category: savedItem.category,
+      location: savedItem.location,
+      is_published: savedItem.isPublished,
+      display_order: savedItem.displayOrder,
+      updated_at: savedItem.updatedAt,
+    }]);
+  } catch (err) {
+    console.warn('InsForge upsert gallery item failed:', err);
+  }
+
+  const current = await getAllGalleryItemsAdmin();
+  const idx = current.findIndex(i => i.id === savedItem.id);
+  if (idx >= 0) {
+    current[idx] = savedItem;
+  } else {
+    current.unshift(savedItem);
+  }
+
+  localStorage.setItem(STORAGE_KEYS.GALLERY_ITEMS, JSON.stringify(current));
+  return savedItem;
+};
+
+export const deleteGalleryItem = async (id: string) => {
+  try {
+    await insforge.database.from('gallery_items').delete().eq('id', id);
+  } catch (err) {
+    console.warn('InsForge delete gallery item failed:', err);
+  }
+
+  const current = await getAllGalleryItemsAdmin();
+  const filtered = current.filter(i => i.id !== id);
+  localStorage.setItem(STORAGE_KEYS.GALLERY_ITEMS, JSON.stringify(filtered));
+};
+
+export const toggleGalleryItemPublished = async (id: string, isPublished: boolean) => {
+  const current = await getAllGalleryItemsAdmin();
+  const item = current.find(i => i.id === id);
+  if (item) {
+    item.isPublished = isPublished;
+    await saveGalleryItem(item);
+  }
+};
+
 

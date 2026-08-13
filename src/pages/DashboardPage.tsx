@@ -64,6 +64,8 @@ import {
 } from '../lib/insforge';
 import { RichBlogEditor } from '../components/dashboard/RichBlogEditor';
 import { AdminLiveChat } from '../components/dashboard/AdminLiveChat';
+import { GalleryManager } from '../components/dashboard/GalleryManager';
+import { Camera, Youtube, Image as ImageIcon, Home } from 'lucide-react';
 
 interface DashboardPageProps {
   currentUser: UserProfile | null;
@@ -76,7 +78,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onOpenAuth
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'all_posts' | 'products' | 'inquiries' | 'partners' | 'subscribers' | 'live_chat' | 'create' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'gallery' | 'youtube' | 'images' | 'all_posts' | 'products' | 'inquiries' | 'partners' | 'subscribers' | 'live_chat' | 'create' | 'settings'>('overview');
   const [blogPosts, setBlogPosts] = useState<BlogPostData[]>([]);
   const [productsList, setProductsList] = useState<ProductData[]>([]);
   const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
@@ -503,26 +505,62 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#1E5E3A]/60">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'overview'
                 ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
-            <span>Overview & Analytics</span>
+            <span>Dashboard / Home</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('gallery')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activeTab === 'gallery'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Camera className="w-4 h-4 text-[#A3E635]" />
+            <span>Gallery</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('youtube')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activeTab === 'youtube'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Youtube className="w-4 h-4 text-red-400" />
+            <span>YouTube Videos</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('images')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activeTab === 'images'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <ImageIcon className="w-4 h-4 text-emerald-300" />
+            <span>Images</span>
           </button>
 
           <button
             onClick={() => setActiveTab('all_posts')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'all_posts'
                 ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>Articles ({blogPosts.length})</span>
+            <span>Content (Articles)</span>
           </button>
 
           <button
@@ -587,14 +625,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'settings'
                 ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
             <Settings className="w-4 h-4" />
-            <span>Profile & Media Storage</span>
+            <span>Settings</span>
+          </button>
+
+          <button
+            onClick={() => {
+              logoutUser();
+              onNavigate('home');
+            }}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap text-rose-400 hover:text-rose-200 hover:bg-rose-950/40 border border-rose-500/20 cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Logout</span>
           </button>
 
           <button
@@ -1175,6 +1224,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* GALLERY, YOUTUBE, AND IMAGES MANAGEMENT TABS */}
+        {(activeTab === 'gallery' || activeTab === 'youtube' || activeTab === 'images') && (
+          <GalleryManager />
         )}
 
         {/* LIVE CHAT TAB */}

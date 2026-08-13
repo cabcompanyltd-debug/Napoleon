@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, getStoredAuthUser } from './lib/insforge';
 import { Preloader } from './components/animations/Preloader';
 import { LiveChatWidget } from './components/chat/LiveChatWidget';
+import { InstallPrompt } from './components/pwa/InstallPrompt';
 import { ScrollProgress } from './components/layout/ScrollProgress';
 import { CustomCursor } from './components/layout/CustomCursor';
 import { Header } from './components/layout/Header';
@@ -276,9 +277,10 @@ export default function App() {
       {/* FOOTER */}
       <Footer onNavigate={navigate} />
 
-      {/* BACK TO TOP & LIVE CHAT */}
+      {/* BACK TO TOP, LIVE CHAT & PWA INSTALL PROMPT */}
       <BackToTop />
       <LiveChatWidget />
+      <InstallPrompt />
     </div>
   );
 }

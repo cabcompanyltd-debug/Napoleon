@@ -1,0 +1,24 @@
+{
+  "name": "Napoleon Steadings Ltd.",
+  "short_name": "Napoleon Ag",
+  "description": "Modern Agricultural Enterprise & Sustainable Commercial Farming in Volta Region, Ghana",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#061A10",
+  "theme_color": "#061A10",
+  "icons": [
+    {
+      "src": "https://lh3.googleusercontent.com/d/1lZWOujri5qIT5UPkCdmitM0SXfve9DQ1",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://lh3.googleusercontent.com/d/1lZWOujri5qIT5UPkCdmitM0SXfve9DQ1",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
