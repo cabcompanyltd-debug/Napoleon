@@ -78,7 +78,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onOpenAuth
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'gallery' | 'youtube' | 'images' | 'all_posts' | 'products' | 'inquiries' | 'partners' | 'subscribers' | 'live_chat' | 'create' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'gallery' | 'all_posts' | 'products' | 'inquiries' | 'partners' | 'subscribers' | 'live_chat' | 'create' | 'settings'>('overview');
   const [blogPosts, setBlogPosts] = useState<BlogPostData[]>([]);
   const [productsList, setProductsList] = useState<ProductData[]>([]);
   const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
@@ -525,30 +525,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           >
             <Camera className="w-4 h-4 text-[#A3E635]" />
             <span>Gallery</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('youtube')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'youtube'
-                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Youtube className="w-4 h-4 text-red-400" />
-            <span>YouTube Videos</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('images')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'images'
-                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <ImageIcon className="w-4 h-4 text-emerald-300" />
-            <span>Images</span>
           </button>
 
           <button
@@ -1226,8 +1202,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         )}
 
-        {/* GALLERY, YOUTUBE, AND IMAGES MANAGEMENT TABS */}
-        {(activeTab === 'gallery' || activeTab === 'youtube' || activeTab === 'images') && (
+        {/* GALLERY MANAGEMENT TAB */}
+        {activeTab === 'gallery' && (
           <GalleryManager />
         )}
 
