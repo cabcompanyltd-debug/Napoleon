@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, getStoredAuthUser } from './lib/insforge';
 import { Preloader } from './components/animations/Preloader';
+import { LiveChatWidget } from './components/chat/LiveChatWidget';
 import { ScrollProgress } from './components/layout/ScrollProgress';
 import { CustomCursor } from './components/layout/CustomCursor';
 import { Header } from './components/layout/Header';
@@ -275,8 +276,9 @@ export default function App() {
       {/* FOOTER */}
       <Footer onNavigate={navigate} />
 
-      {/* BACK TO TOP */}
+      {/* BACK TO TOP & LIVE CHAT */}
       <BackToTop />
+      <LiveChatWidget />
     </div>
   );
 }

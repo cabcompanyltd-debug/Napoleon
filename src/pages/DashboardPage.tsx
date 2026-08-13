@@ -63,6 +63,7 @@ import {
   updateUserProfileAvatar
 } from '../lib/insforge';
 import { RichBlogEditor } from '../components/dashboard/RichBlogEditor';
+import { AdminLiveChat } from '../components/dashboard/AdminLiveChat';
 
 interface DashboardPageProps {
   currentUser: UserProfile | null;
@@ -75,7 +76,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onOpenAuth
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'all_posts' | 'products' | 'inquiries' | 'partners' | 'subscribers' | 'create' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'all_posts' | 'products' | 'inquiries' | 'partners' | 'subscribers' | 'live_chat' | 'create' | 'settings'>('overview');
   const [blogPosts, setBlogPosts] = useState<BlogPostData[]>([]);
   const [productsList, setProductsList] = useState<ProductData[]>([]);
   const [inquiries, setInquiries] = useState<ContactInquiry[]>([]);
@@ -570,6 +571,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           >
             <Users className="w-4 h-4" />
             <span>Subscribers ({subscribers.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('live_chat')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'live_chat'
+                ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/40 shadow-inner'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4 text-[#A3E635]" />
+            <span>Visitor Live Chat</span>
           </button>
 
           <button
@@ -1163,6 +1176,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
           </div>
         )}
+
+        {/* LIVE CHAT TAB */}
+        {activeTab === 'live_chat' && <AdminLiveChat />}
 
         {/* CREATE / COMPOSER TAB */}
         {activeTab === 'create' && (
