@@ -1,5 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, X, Send, Shield, Circle, Minimize2, Sparkles, Trash2, LogOut, User } from 'lucide-react';
+import {
+  MessageSquare,
+  X,
+  Send,
+  Shield,
+  Circle,
+  Minimize2,
+  Sparkles,
+  Trash2,
+  LogOut,
+  User,
+  Paperclip,
+  FileText,
+  Image as ImageIcon,
+  Download,
+  Loader2
+} from 'lucide-react';
 import {
   getOrCreateVisitorSession,
   saveVisitorUserInfo,
@@ -10,12 +26,13 @@ import {
   deleteChatSession,
   isAdminOnline,
   sendAdminHeartbeat,
+  uploadChatAttachment,
   ChatMessage,
 } from '../../lib/chatService';
 
 export const LiveChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // Visitor Mode State
   const [visitorSessionId, setVisitorSessionId] = useState('');
   const [visitorMessages, setVisitorMessages] = useState<ChatMessage[]>([]);
@@ -24,21 +41,31 @@ export const LiveChatWidget: React.FC = () => {
   const [isVisitorRegistered, setIsVisitorRegistered] = useState(false);
   const [visitorUnreadCount, setVisitorUnreadCount] = useState(0);
 
-  // Admin Mode State (When triggered from Admin Dashboard)
+  // Admin Mode State (Triggered when admin clicks a person in Admin Dashboard)
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [adminActiveSessionId, setAdminActiveSessionId] = useState<string | null>(null);
   const [adminActiveUserName, setAdminActiveUserName] = useState('');
   const [adminActiveUserEmail, setAdminActiveUserEmail] = useState('');
   const [adminMessages, setAdminMessages] = useState<ChatMessage[]>([]);
 
-  // Common State
+  // Common Input & File Attachment State
   const [inputText, setInputText] = useState('');
   const [adminStatus, setAdminStatus] = useState<boolean>(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize Visitor Session
+  // Dispatch open/close change event so WhatsApp button hides when chat is open
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('napoleon-chat-open-change', { detail: { isOpen } })
+    );
+  }, [isOpen]);
+
+  // Initialize Visitor Session & Admin Listener
   useEffect(() => {
     const sess = getOrCreateVisitorSession();
     setVisitorSessionId(sess.sessionId);
@@ -63,12 +90,11 @@ export const LiveChatWidget: React.FC = () => {
     };
     loadVisitorMsgs();
 
-    // Listen for custom trigger from Admin Dashboard
+    // Listen for trigger from Admin Dashboard when admin selects a person
     const handleOpenAdminChatSession = async (e: Event) => {
       const custom = e as CustomEvent;
       const { sessionId, userName, userEmail } = custom.detail || {};
       if (sessionId) {
-        // Send heartbeat so system marks admin online
         sendAdminHeartbeat();
 
         setAdminActiveSessionId(sessionId);
@@ -128,7 +154,7 @@ export const LiveChatWidget: React.FC = () => {
         const adminMsgs = await getSessionMessages(adminActiveSessionId);
         setAdminMessages(adminMsgs);
       }
-    }, 4000);
+    }, 3000);
 
     return () => {
       clearInterval(adminTimer);
@@ -167,9 +193,34 @@ export const LiveChatWidget: React.FC = () => {
     setIsVisitorRegistered(true);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 12 * 1024 * 1024) {
+        alert('File size exceeds 12MB limit.');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() && !selectedFile) return;
+
+    let attachmentUrl: string | undefined = undefined;
+    let attachmentType: 'image' | 'file' | undefined = undefined;
+
+    if (selectedFile) {
+      setIsUploadingFile(true);
+      const res = await uploadChatAttachment(selectedFile);
+      if (res) {
+        attachmentUrl = res.url;
+        attachmentType = res.type;
+      }
+      setIsUploadingFile(false);
+      setSelectedFile(null);
+    }
 
     const textToSend = inputText;
     setInputText('');
@@ -182,7 +233,9 @@ export const LiveChatWidget: React.FC = () => {
         textToSend,
         'admin',
         'Napoleon Admin',
-        'admin@napoleonsteadings.com'
+        'admin@napoleonsteadings.com',
+        attachmentUrl,
+        attachmentType
       );
       setAdminMessages((prev) => [...prev.filter((m) => m.id !== newMsg.id), newMsg]);
     } else if (visitorSessionId) {
@@ -190,7 +243,15 @@ export const LiveChatWidget: React.FC = () => {
       const activeName = visitorName.trim() || 'Guest Visitor';
       const activeEmail = visitorEmail.trim() || undefined;
 
-      const userMsg = await sendChatMessage(visitorSessionId, textToSend, 'user', activeName, activeEmail);
+      const userMsg = await sendChatMessage(
+        visitorSessionId,
+        textToSend,
+        'user',
+        activeName,
+        activeEmail,
+        attachmentUrl,
+        attachmentType
+      );
       setVisitorMessages((prev) => [...prev.filter((m) => m.id !== userMsg.id), userMsg]);
 
       // Offline bot reply if admin is offline
@@ -199,13 +260,13 @@ export const LiveChatWidget: React.FC = () => {
         setTimeout(async () => {
           const offlineReply = await sendChatMessage(
             visitorSessionId,
-            `Hello ${activeName}! 👋 Thank you for messaging Napoleon Steadings. Our support team is currently offline, but your message has been logged directly into our Admin Portal. We will reply to you as soon as an admin logs in!`,
+            `Hello ${activeName}! 👋 Thank you for messaging Napoleon Steadings. Our support team is currently offline, but your message has been logged directly into our Admin Portal. We will reply as soon as an admin logs in!`,
             'admin',
             'Napoleon Support Bot',
             'support@napoleonsteadings.com'
           );
           setVisitorMessages((prev) => [...prev.filter((m) => m.id !== offlineReply.id), offlineReply]);
-        }, 1000);
+        }, 1200);
       }
     }
   };
@@ -230,17 +291,17 @@ export const LiveChatWidget: React.FC = () => {
   const activeMessages = isAdminMode ? adminMessages : visitorMessages;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none font-sans">
       {/* FLOATING CHAT BOX WINDOW */}
       {isOpen && (
-        <div className="pointer-events-auto w-[90vw] sm:w-[400px] h-[540px] max-h-[82vh] bg-[#071910] border border-[#A3E635]/40 rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-4 transition-all animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="pointer-events-auto w-[92vw] sm:w-[420px] h-[560px] max-h-[82vh] bg-[#071910] border border-[#A3E635]/40 rounded-3xl shadow-2xl flex flex-col overflow-hidden mb-4 transition-all animate-in fade-in slide-in-from-bottom-5 duration-200 ring-1 ring-black/50">
           
           {/* HEADER */}
-          <div className="bg-gradient-to-r from-[#04140C] via-[#0B2B1B] to-[#04140C] border-b border-[#A3E635]/30 p-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
+          <div className="bg-gradient-to-r from-[#04140C] via-[#0B2B1B] to-[#04140C] border-b border-[#A3E635]/30 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative shrink-0">
                 <div
-                  className={`w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-sm shadow-inner ${
+                  className={`w-10 h-10 rounded-2xl border flex items-center justify-center font-bold text-sm shadow-inner ${
                     isAdminMode
                       ? 'bg-[#1E5E3A] border-[#A3E635] text-[#A3E635]'
                       : 'bg-[#1E5E3A] border-[#A3E635]/40 text-[#A3E635]'
@@ -255,24 +316,24 @@ export const LiveChatWidget: React.FC = () => {
                 />
               </div>
 
-              <div>
+              <div className="min-w-0">
                 {isAdminMode ? (
                   <>
                     <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded-md bg-[#A3E635] text-[#0B2B1B] text-[10px] font-extrabold uppercase">
+                      <span className="px-2 py-0.5 rounded-md bg-[#A3E635] text-[#0B2B1B] text-[10px] font-black uppercase tracking-wider">
                         Admin Mode
                       </span>
                       <Sparkles className="w-3.5 h-3.5 text-[#A3E635]" />
                     </div>
-                    <h3 className="text-xs font-bold text-white truncate max-w-[180px] mt-0.5">
-                      Chatting with {adminActiveUserName}
+                    <h3 className="text-xs font-bold text-white truncate mt-0.5">
+                      {adminActiveUserName}
                     </h3>
                   </>
                 ) : (
                   <>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                      Napoleon Support
-                      <Sparkles className="w-3.5 h-3.5 text-[#A3E635]" />
+                    <h3 className="text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                      Napoleon Agribusiness Support
+                      <Sparkles className="w-3.5 h-3.5 text-[#A3E635] shrink-0" />
                     </h3>
                     <div className="flex items-center gap-1.5 text-[11px]">
                       <Circle
@@ -281,7 +342,7 @@ export const LiveChatWidget: React.FC = () => {
                         }`}
                       />
                       <span className={adminStatus ? 'text-emerald-300 font-medium' : 'text-amber-200/80'}>
-                        {adminStatus ? 'Admin Live Online' : 'Leave a message (Support Offline)'}
+                        {adminStatus ? 'Admin Online' : 'Support Offline'}
                       </span>
                     </div>
                   </>
@@ -289,22 +350,22 @@ export const LiveChatWidget: React.FC = () => {
               </div>
             </div>
 
-            {/* Header Actions */}
-            <div className="flex items-center gap-1">
+            {/* Header Action Controls */}
+            <div className="flex items-center gap-1 shrink-0">
               {isAdminMode && (
                 <>
                   <button
                     type="button"
                     onClick={() => setShowDeleteModal(true)}
-                    className="p-1.5 rounded-lg bg-red-950/60 border border-red-500/40 text-red-400 hover:bg-red-900 transition-colors cursor-pointer"
-                    title="Delete this chat session"
+                    className="p-2 rounded-xl bg-red-950/80 border border-red-500/40 text-red-400 hover:bg-red-900 transition-colors cursor-pointer"
+                    title="Delete this conversation"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={handleExitAdminMode}
-                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-emerald-300 hover:text-white transition-colors cursor-pointer"
+                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 hover:text-white transition-colors cursor-pointer"
                     title="Exit Admin Chat"
                   >
                     <LogOut className="w-4 h-4" />
@@ -315,7 +376,7 @@ export const LiveChatWidget: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-emerald-200 hover:text-white transition-colors cursor-pointer"
+                className="p-2 rounded-xl hover:bg-white/10 text-emerald-200 hover:text-white transition-colors cursor-pointer"
                 title="Minimize chat"
               >
                 <Minimize2 className="w-4 h-4" />
@@ -325,13 +386,13 @@ export const LiveChatWidget: React.FC = () => {
 
           {/* VISITOR REGISTRATION STEP IF NOT REGISTERED */}
           {!isAdminMode && !isVisitorRegistered ? (
-            <div className="flex-1 p-5 flex flex-col justify-center items-center text-center bg-[#071910]/80">
-              <div className="w-12 h-12 rounded-full bg-[#1E5E3A]/40 border border-[#A3E635]/30 text-[#A3E635] flex items-center justify-center mb-3">
+            <div className="flex-1 p-6 flex flex-col justify-center items-center text-center bg-[#071910]/80">
+              <div className="w-12 h-12 rounded-2xl bg-[#1E5E3A]/40 border border-[#A3E635]/30 text-[#A3E635] flex items-center justify-center mb-3 shadow-lg">
                 <MessageSquare className="w-6 h-6" />
               </div>
               <h4 className="text-sm font-bold text-white mb-1">Start Live Agriculture Chat</h4>
-              <p className="text-xs text-emerald-200/80 mb-4 px-2">
-                Have questions about our farms, produce orders, or investments? Introduce yourself to chat with our team.
+              <p className="text-xs text-emerald-200/80 mb-5 px-2 leading-relaxed">
+                Have questions about our farms, produce orders, or investments? Introduce yourself to chat with our Volta Region team.
               </p>
 
               <form onSubmit={handleVisitorRegister} className="w-full space-y-3">
@@ -364,11 +425,11 @@ export const LiveChatWidget: React.FC = () => {
             </div>
           ) : (
             /* CONVERSATION MESSAGES LIST */
-            <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-[#04140C]/50 text-xs">
+            <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-[#04140C]/50 text-xs">
               {activeMessages.length === 0 ? (
                 <div className="text-center py-12 text-emerald-300/60 font-mono text-[11px]">
                   {isAdminMode
-                    ? `No messages in this chat session yet. Type below to message ${adminActiveUserName}.`
+                    ? `No messages in this conversation yet. Type below to message ${adminActiveUserName}.`
                     : 'No messages yet. Type below to reach Napoleon Support!'}
                 </div>
               ) : (
@@ -384,14 +445,47 @@ export const LiveChatWidget: React.FC = () => {
                           {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
+
                       <div
-                        className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed break-words shadow-sm ${
+                        className={`max-w-[88%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed break-words shadow-md ${
                           isSentByMe
                             ? 'bg-[#1E5E3A] text-white rounded-br-none border border-[#A3E635]/40'
                             : 'bg-[#0B2B1B] text-emerald-100 rounded-bl-none border border-emerald-500/30'
                         }`}
                       >
-                        {m.message}
+                        {/* Image Attachment Preview */}
+                        {m.attachmentUrl && m.attachmentType === 'image' && (
+                          <div className="mb-2 rounded-xl overflow-hidden border border-white/20">
+                            <a href={m.attachmentUrl} target="_blank" rel="noopener noreferrer">
+                              <img
+                                src={m.attachmentUrl}
+                                alt="Attachment"
+                                className="w-full max-h-48 object-cover hover:opacity-90 transition-opacity"
+                              />
+                            </a>
+                          </div>
+                        )}
+
+                        {/* Document/File Attachment Card */}
+                        {m.attachmentUrl && m.attachmentType === 'file' && (
+                          <div className="mb-2 p-2 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FileText className="w-4 h-4 text-[#A3E635] shrink-0" />
+                              <span className="text-[11px] text-white truncate font-mono">Attachment File</span>
+                            </div>
+                            <a
+                              href={m.attachmentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg bg-[#1E5E3A] text-[#A3E635] hover:bg-[#287A4B] transition-colors"
+                              title="Download attachment"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        )}
+
+                        {m.message && <p>{m.message}</p>}
                       </div>
                     </div>
                   );
@@ -401,9 +495,41 @@ export const LiveChatWidget: React.FC = () => {
             </div>
           )}
 
+          {/* ATTACHMENT PREVIEW CHIP */}
+          {selectedFile && (
+            <div className="px-3 py-1.5 bg-[#0B2B1B] border-t border-white/10 flex items-center justify-between text-xs text-emerald-200">
+              <div className="flex items-center gap-2 truncate">
+                <Paperclip className="w-3.5 h-3.5 text-[#A3E635]" />
+                <span className="truncate">{selectedFile.name}</span>
+              </div>
+              <button
+                onClick={() => setSelectedFile(null)}
+                className="text-red-400 hover:text-red-300 p-1 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* FOOTER INPUT */}
           {(isAdminMode || isVisitorRegistered) && (
-            <form onSubmit={handleSend} className="p-2.5 bg-[#04140C] border-t border-white/10 flex items-center gap-2">
+            <form onSubmit={handleSend} className="p-3 bg-[#04140C] border-t border-white/10 flex items-center gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 rounded-xl bg-black/40 hover:bg-white/10 text-emerald-300 hover:text-[#A3E635] border border-white/10 transition-colors cursor-pointer shrink-0"
+                title="Attach file or photo"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+
               <input
                 type="text"
                 placeholder={isAdminMode ? `Reply to ${adminActiveUserName}...` : 'Type your message...'}
@@ -411,13 +537,20 @@ export const LiveChatWidget: React.FC = () => {
                 onChange={(e) => setInputText(e.target.value)}
                 className="flex-1 px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 focus:border-[#A3E635] text-white text-xs outline-none placeholder:text-emerald-700"
               />
+
               <button
                 type="submit"
-                disabled={!inputText.trim()}
-                className="px-3.5 py-2.5 rounded-xl bg-[#1E5E3A] hover:bg-[#287A4B] disabled:opacity-40 text-[#A3E635] border border-[#A3E635]/40 transition-all active:scale-95 cursor-pointer flex items-center gap-1 font-bold text-xs"
+                disabled={(!inputText.trim() && !selectedFile) || isUploadingFile}
+                className="px-3.5 py-2.5 rounded-xl bg-[#1E5E3A] hover:bg-[#287A4B] disabled:opacity-40 text-[#A3E635] border border-[#A3E635]/40 transition-all active:scale-95 cursor-pointer flex items-center gap-1 font-bold text-xs shrink-0"
               >
-                <Send className="w-4 h-4" />
-                <span>Send</span>
+                {isUploadingFile ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-[#A3E635]" />
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span className="hidden sm:inline">Send</span>
+                  </>
+                )}
               </button>
             </form>
           )}
@@ -451,7 +584,7 @@ export const LiveChatWidget: React.FC = () => {
         )}
       </button>
 
-      {/* CUSTOM DELETE CONFIRMATION MODAL INSIDE WIDGET */}
+      {/* DELETE CONFIRMATION MODAL */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200 pointer-events-auto">
           <div className="bg-[#0A2216] border border-red-500/50 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl relative overflow-hidden text-white">
@@ -460,13 +593,13 @@ export const LiveChatWidget: React.FC = () => {
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-white">Delete Visitor Chat</h3>
+                <h3 className="font-bold text-base text-white">Delete this conversation?</h3>
                 <p className="text-xs text-red-200/80">InsForge Chat Action</p>
               </div>
             </div>
 
             <p className="text-xs text-emerald-200/90 leading-relaxed bg-black/40 p-3.5 rounded-xl border border-white/10">
-              Are you sure you want to permanently delete chat session with <strong className="text-white">"{adminActiveUserName}"</strong>? All messages in this conversation will be permanently removed.
+              Deleting this conversation will remove its messages and associated chat data for <strong className="text-white">"{adminActiveUserName}"</strong>.
             </p>
 
             <div className="flex items-center gap-3 pt-2">
@@ -482,7 +615,7 @@ export const LiveChatWidget: React.FC = () => {
                 onClick={handleConfirmDeleteSession}
                 className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 transition-transform active:scale-95 cursor-pointer"
               >
-                Yes, Delete Chat
+                Delete
               </button>
             </div>
           </div>

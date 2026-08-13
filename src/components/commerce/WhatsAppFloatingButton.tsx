@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Send, ArrowRight } from 'lucide-react';
 
 const WHATSAPP_NUMBER = '233201073087';
@@ -21,6 +21,25 @@ const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = "w-6 h-6" 
 export const WhatsAppFloatingButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [customMsg, setCustomMsg] = useState('');
+  const [isWebChatOpen, setIsWebChatOpen] = useState(false);
+
+  useEffect(() => {
+    const handleChatOpenChange = (e: Event) => {
+      const custom = e as CustomEvent;
+      if (custom.detail) {
+        setIsWebChatOpen(!!custom.detail.isOpen);
+      }
+    };
+
+    window.addEventListener('napoleon-chat-open-change', handleChatOpenChange);
+    return () => {
+      window.removeEventListener('napoleon-chat-open-change', handleChatOpenChange);
+    };
+  }, []);
+
+  if (isWebChatOpen) {
+    return null;
+  }
 
   const quickMessages = [
     'Hello Napoleon Steadings! I would like to place a commercial produce order.',

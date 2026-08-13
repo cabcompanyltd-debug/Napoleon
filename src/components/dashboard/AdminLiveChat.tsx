@@ -10,10 +10,9 @@ import {
   Mail,
   User,
   ExternalLink,
-  Sparkles,
-  ShieldCheck,
   Clock,
-  AlertCircle
+  Sparkles,
+  ShieldCheck
 } from 'lucide-react';
 import {
   getAllChatSessions,
@@ -48,12 +47,12 @@ export const AdminLiveChat: React.FC = () => {
     loadSessions();
 
     const unsub = subscribeToChatUpdates((event) => {
-      if (event.type === 'NEW_MESSAGE' || event.type === 'SESSION_DELETED') {
+      if (event.type === 'NEW_MESSAGE' || event.type === 'SESSION_DELETED' || event.type === 'MESSAGES_READ') {
         loadSessions();
       }
     });
 
-    const pollTimer = setInterval(loadSessions, 4000);
+    const pollTimer = setInterval(loadSessions, 3000);
 
     return () => {
       unsub();
@@ -61,14 +60,14 @@ export const AdminLiveChat: React.FC = () => {
     };
   }, []);
 
-  const handleOpenChatBox = (session: ChatSession) => {
+  const handleSelectPerson = (session: ChatSession) => {
     // Send heartbeat so admin status is verified
     sendAdminHeartbeat();
 
-    // Mark as read
+    // Mark messages as read for admin
     markSessionAsRead(session.sessionId, 'admin');
 
-    // Trigger floating chat box at the bottom-right
+    // Trigger opening the main website floating chat box for this visitor conversation
     window.dispatchEvent(
       new CustomEvent('open-admin-chat-session', {
         detail: {
@@ -80,7 +79,8 @@ export const AdminLiveChat: React.FC = () => {
     );
   };
 
-  const handleMarkAsRead = async (sessionId: string) => {
+  const handleMarkAsRead = async (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
     await markSessionAsRead(sessionId, 'admin');
     setSessions((prev) =>
       prev.map((s) => (s.sessionId === sessionId ? { ...s, unreadForAdmin: 0 } : s))
@@ -113,39 +113,39 @@ export const AdminLiveChat: React.FC = () => {
 
   return (
     <div className="space-y-6 text-white font-sans">
-      {/* HEADER METRICS BAR */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-[#04140C] border border-[#A3E635]/30 flex items-center justify-between shadow-xl">
-          <div className="space-y-1">
-            <span className="text-xs font-mono text-emerald-400">Total Conversations</span>
-            <h3 className="text-2xl font-black text-white">{sessions.length}</h3>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-[#1E5E3A]/40 border border-[#A3E635]/40 text-[#A3E635] flex items-center justify-center">
-            <MessageSquare className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-[#04140C] border border-[#A3E635]/30 flex items-center justify-between shadow-xl">
-          <div className="space-y-1">
-            <span className="text-xs font-mono text-emerald-400">Unread Visitor Messages</span>
-            <h3 className="text-2xl font-black text-white">{totalUnread}</h3>
-          </div>
-          <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${totalUnread > 0 ? 'bg-red-950/80 border-red-500 text-red-400 animate-pulse' : 'bg-[#1E5E3A]/40 border-[#A3E635]/40 text-[#A3E635]'}`}>
-            <AlertCircle className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-[#04140C] border border-[#A3E635]/30 flex items-center justify-between shadow-xl">
-          <div className="space-y-1">
-            <span className="text-xs font-mono text-emerald-400">Your Live Status</span>
-            <div className="flex items-center gap-2 pt-1">
-              <Circle className="w-3 h-3 fill-emerald-400 text-emerald-400 animate-pulse" />
-              <span className="text-sm font-bold text-emerald-300">Admin Online</span>
+      {/* HEADER BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-gradient-to-r from-[#04140C] via-[#0B2B1B] to-[#04140C] border border-[#A3E635]/30 shadow-2xl">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-[#A3E635] text-[#0B2B1B] text-[10px] font-extrabold uppercase tracking-widest">
+              Messages & Conversations
+            </span>
+            <div className="flex items-center gap-1.5 text-xs text-emerald-300">
+              <Circle className="w-2.5 h-2.5 fill-emerald-400 text-emerald-400 animate-pulse" />
+              <span>Admin Live</span>
             </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-[#1E5E3A]/40 border border-[#A3E635]/40 text-[#A3E635] flex items-center justify-center">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
+          <h2 className="text-2xl font-black text-white">Customer Inquiries ({sessions.length})</h2>
+          <p className="text-xs text-emerald-200/80">
+            Click any visitor below to open their conversation in the website floating chat box.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {totalUnread > 0 && (
+            <span className="px-3 py-1.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-bold flex items-center gap-1.5 animate-pulse">
+              <Circle className="w-2 h-2 fill-red-400 text-red-400" />
+              <span>{totalUnread} Unread {totalUnread === 1 ? 'Message' : 'Messages'}</span>
+            </span>
+          )}
+
+          <button
+            onClick={loadSessions}
+            className="p-2.5 rounded-xl bg-black/40 hover:bg-white/10 border border-white/10 text-emerald-300 hover:text-white transition-colors cursor-pointer"
+            title="Refresh list"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -155,7 +155,7 @@ export const AdminLiveChat: React.FC = () => {
           <Search className="w-4 h-4 absolute left-3.5 top-3 text-emerald-600" />
           <input
             type="text"
-            placeholder="Search visitor name, email, or message..."
+            placeholder="Search visitor name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-xl bg-black/40 border border-white/10 focus:border-[#A3E635] text-white text-xs outline-none placeholder:text-emerald-800"
@@ -172,98 +172,88 @@ export const AdminLiveChat: React.FC = () => {
             }`}
           >
             <Filter className="w-4 h-4" />
-            <span>{filterUnread ? 'Showing Unread Only' : 'All Conversations'}</span>
-          </button>
-
-          <button
-            onClick={loadSessions}
-            className="p-2 rounded-xl bg-black/40 hover:bg-white/10 border border-white/10 text-emerald-300 hover:text-white transition-colors cursor-pointer"
-            title="Refresh List"
-          >
-            <RefreshCw className="w-4 h-4" />
+            <span>{filterUnread ? 'Unread Conversations' : 'All Conversations'}</span>
           </button>
         </div>
       </div>
 
-      {/* VISITOR CONVERSATIONS LIST */}
+      {/* SIMPLE MINIMAL CONVERSATION LIST */}
       <div className="bg-[#071910] border border-[#A3E635]/30 rounded-2xl overflow-hidden shadow-2xl">
         <div className="p-4 bg-[#04140C] border-b border-white/10 flex items-center justify-between">
           <h3 className="font-bold text-sm text-white flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-[#A3E635]" />
             <span>Visitor Message Records ({filteredSessions.length})</span>
           </h3>
-          <p className="text-xs text-emerald-300/80 hidden sm:block">
-            Click <strong className="text-[#A3E635]">"Chat with Visitor"</strong> to open the live bottom-right chat box for any person.
-          </p>
+          <span className="text-xs text-emerald-400 font-mono">Live Sync Active</span>
         </div>
 
         <div className="divide-y divide-white/5">
           {isLoading ? (
-            <div className="p-12 text-center text-xs text-emerald-400/60 font-mono">Loading visitor chats...</div>
+            <div className="p-12 text-center text-xs text-emerald-400/60 font-mono">Loading conversations...</div>
           ) : filteredSessions.length === 0 ? (
             <div className="p-12 text-center space-y-3">
               <div className="w-12 h-12 rounded-full bg-white/5 mx-auto flex items-center justify-center text-emerald-600">
                 <MessageSquare className="w-6 h-6" />
               </div>
               <p className="text-xs text-emerald-400/70 font-mono">
-                {searchTerm || filterUnread ? 'No matching visitor messages found.' : 'No active visitor conversations logged yet.'}
+                {searchTerm || filterUnread ? 'No matching conversations found.' : 'No visitor messages logged yet.'}
               </p>
             </div>
           ) : (
             filteredSessions.map((session) => (
               <div
                 key={session.sessionId}
-                className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/5 transition-all group"
+                onClick={() => handleSelectPerson(session)}
+                className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-[#1E5E3A]/20 transition-all cursor-pointer group"
               >
-                {/* Visitor Info & Message Snippet */}
-                <div className="flex items-start gap-3.5 flex-1 min-w-0">
-                  <div className="w-11 h-11 rounded-2xl bg-[#0B2B1B] border border-[#A3E635]/40 text-[#A3E635] flex items-center justify-center font-black text-sm shrink-0 shadow-lg">
-                    {session.userName.charAt(0).toUpperCase()}
+                {/* Person Info */}
+                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                  <div className="relative shrink-0">
+                    <div className="w-11 h-11 rounded-2xl bg-[#0B2B1B] border border-[#A3E635]/40 text-[#A3E635] flex items-center justify-center font-black text-sm shadow-lg group-hover:border-[#A3E635] transition-colors">
+                      {session.userName.charAt(0).toUpperCase()}
+                    </div>
+                    {session.unreadForAdmin > 0 && (
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-[#071910] animate-pulse" />
+                    )}
                   </div>
 
-                  <div className="space-y-1 flex-1 min-w-0">
+                  <div className="space-y-0.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-bold text-sm text-white">{session.userName}</h4>
+                      <h4 className="font-bold text-sm text-white group-hover:text-[#A3E635] transition-colors">
+                        {session.userName}
+                      </h4>
+
                       {session.unreadForAdmin > 0 && (
-                        <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-extrabold animate-bounce">
-                          {session.unreadForAdmin} Unread
+                        <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 text-[10px] font-extrabold">
+                          {session.unreadForAdmin} New
                         </span>
                       )}
-                      <span className="text-[10px] font-mono text-emerald-500/80 flex items-center gap-1">
+
+                      <span className="text-[10px] font-mono text-emerald-500/80 flex items-center gap-1 ml-auto sm:ml-0">
                         <Clock className="w-3 h-3" />
                         {new Date(session.lastMessageTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
                     </div>
 
-                    {session.userEmail ? (
-                      <p className="text-xs text-emerald-300/80 flex items-center gap-1.5 truncate">
-                        <Mail className="w-3.5 h-3.5 text-[#A3E635]" />
+                    {session.userEmail && (
+                      <p className="text-xs text-emerald-300/80 flex items-center gap-1 truncate">
+                        <Mail className="w-3 h-3 text-[#A3E635]" />
                         <span>{session.userEmail}</span>
                       </p>
-                    ) : (
-                      <p className="text-[11px] text-emerald-600 italic">Guest Visitor (No email registered)</p>
                     )}
 
-                    <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-xs text-emerald-100/90 leading-relaxed mt-2 max-w-2xl break-words">
-                      "{session.lastMessage}"
-                    </div>
+                    <p className="text-xs text-emerald-100/70 truncate pt-0.5">
+                      {session.lastMessage}
+                    </p>
                   </div>
                 </div>
 
-                {/* Direct Action Buttons */}
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <button
-                    onClick={() => handleOpenChatBox(session)}
-                    className="px-4 py-2.5 rounded-xl bg-[#A3E635] hover:bg-[#b8f048] text-[#0B2B1B] font-extrabold text-xs transition-all flex items-center gap-2 shadow-lg active:scale-95 cursor-pointer"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    <span>Chat with Visitor</span>
-                  </button>
-
+                {/* Click Action Indicator */}
+                <div className="flex items-center gap-2 shrink-0">
                   {session.unreadForAdmin > 0 && (
                     <button
-                      onClick={() => handleMarkAsRead(session.sessionId)}
-                      className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 transition-colors cursor-pointer"
+                      onClick={(e) => handleMarkAsRead(e, session.sessionId)}
+                      className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 transition-colors cursor-pointer"
                       title="Mark as Read"
                     >
                       <CheckCheck className="w-4 h-4" />
@@ -271,12 +261,20 @@ export const AdminLiveChat: React.FC = () => {
                   )}
 
                   <button
-                    onClick={() => setDeleteModalSession(session)}
-                    className="p-2.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-400 hover:bg-red-900/80 transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteModalSession(session);
+                    }}
+                    className="p-2 rounded-xl bg-red-950/60 border border-red-500/40 text-red-400 hover:bg-red-900 transition-colors cursor-pointer"
                     title="Delete Conversation"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+
+                  <div className="px-3.5 py-2 rounded-xl bg-[#1E5E3A] group-hover:bg-[#A3E635] text-[#A3E635] group-hover:text-[#0B2B1B] font-extrabold text-xs transition-all flex items-center gap-1.5 shadow-md">
+                    <span>Open Chat</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </div>
                 </div>
               </div>
             ))
@@ -293,17 +291,14 @@ export const AdminLiveChat: React.FC = () => {
                 <Trash2 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-white">Delete Visitor Chat</h3>
-                <p className="text-xs text-red-200/80">InsForge Chat Removal</p>
+                <h3 className="font-bold text-lg text-white">Delete Conversation?</h3>
+                <p className="text-xs text-red-200/80">InsForge Chat System</p>
               </div>
             </div>
 
             <div className="p-4 rounded-2xl bg-black/50 border border-white/10 text-xs space-y-2">
               <p className="text-emerald-200/90 leading-relaxed">
-                Are you sure you want to permanently delete chat session for <strong className="text-white">"{deleteModalSession.userName}"</strong>?
-              </p>
-              <p className="text-[11px] text-red-300/80 italic">
-                All messages in this session will be permanently removed from InsForge.
+                Deleting this conversation with <strong className="text-white">"{deleteModalSession.userName}"</strong> will remove its messages and associated chat data from InsForge.
               </p>
             </div>
 
@@ -320,7 +315,7 @@ export const AdminLiveChat: React.FC = () => {
                 onClick={handleConfirmDelete}
                 className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 transition-transform active:scale-95 cursor-pointer"
               >
-                Yes, Delete Chat
+                Yes, Delete
               </button>
             </div>
           </div>

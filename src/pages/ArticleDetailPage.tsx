@@ -254,8 +254,8 @@ export const ArticleDetailPage: React.FC<Props> = ({ slug, onNavigate }) => {
       <section className="py-16 bg-[#071910]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           {coverImage && (
-            <div className="rounded-3xl overflow-hidden shadow-2xl border border-[#A3E635]/30">
-              <img src={coverImage} alt={title} className="w-full h-auto object-cover" />
+            <div className="rounded-3xl overflow-hidden shadow-2xl border border-[#A3E635]/30 w-full h-72 sm:h-96 md:h-[420px]">
+              <img src={coverImage} alt={title} className="w-full h-full object-cover" />
             </div>
           )}
 

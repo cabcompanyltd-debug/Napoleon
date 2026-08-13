@@ -7,6 +7,8 @@ export interface ChatMessage {
   senderName: string;
   senderEmail?: string;
   message: string;
+  attachmentUrl?: string;
+  attachmentType?: 'image' | 'file';
   timestamp: string;
   read: boolean;
 }
@@ -27,7 +29,6 @@ const STORAGE_KEYS = {
   CHAT_SESSION_ID: 'napoleon_chat_session_id',
   CHAT_USER_INFO: 'napoleon_chat_user_info',
   LOCAL_MESSAGES: 'napoleon_chat_messages_v2',
-  LOCAL_SESSIONS: 'napoleon_chat_sessions_v2',
   ADMIN_HEARTBEAT: 'napoleon_admin_heartbeat',
 };
 
@@ -95,6 +96,49 @@ const saveLocalMessages = (messages: ChatMessage[]) => {
   localStorage.setItem(STORAGE_KEYS.LOCAL_MESSAGES, JSON.stringify(messages));
 };
 
+// Upload attachment to InsForge Storage bucket (chat-attachments)
+export const uploadChatAttachment = async (file: File): Promise<{ url: string; type: 'image' | 'file' } | null> => {
+  try {
+    const ext = file.name.split('.').pop() || 'png';
+    const cleanFileName = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+    
+    // Try chat-attachments bucket first
+    let res = await insforge.storage.from('chat-attachments').upload(cleanFileName, file);
+    if (res.error) {
+      // Fallback to napoleon-media bucket
+      res = await insforge.storage.from('napoleon-media').upload(cleanFileName, file);
+    }
+
+    if (res.data?.url) {
+      const isImage = file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext.toLowerCase());
+      return {
+        url: res.data.url,
+        type: isImage ? 'image' : 'file',
+      };
+    }
+  } catch (err) {
+    console.warn('InsForge Storage upload error:', err);
+  }
+
+  // Fallback to Data URL for instant rendering if offline
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        const isImage = file.type.startsWith('image/');
+        resolve({
+          url: reader.result,
+          type: isImage ? 'image' : 'file',
+        });
+      } else {
+        resolve(null);
+      }
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+};
+
 // Fetch messages for a specific session
 export const getSessionMessages = async (sessionId: string): Promise<ChatMessage[]> => {
   try {
@@ -111,7 +155,9 @@ export const getSessionMessages = async (sessionId: string): Promise<ChatMessage
         senderRole: item.sender_role,
         senderName: item.sender_name,
         senderEmail: item.sender_email,
-        message: item.message,
+        message: item.message || '',
+        attachmentUrl: item.attachment_url,
+        attachmentType: item.attachment_type,
         timestamp: item.created_at || item.timestamp,
         read: item.read || false,
       }));
@@ -145,7 +191,9 @@ export const getAllChatSessions = async (): Promise<ChatSession[]> => {
         senderRole: item.sender_role,
         senderName: item.sender_name,
         senderEmail: item.sender_email,
-        message: item.message,
+        message: item.message || (item.attachment_url ? '📎 Sent an attachment' : ''),
+        attachmentUrl: item.attachment_url,
+        attachmentType: item.attachment_type,
         timestamp: item.created_at || item.timestamp,
         read: item.read || false,
       }));
@@ -167,7 +215,7 @@ export const getAllChatSessions = async (): Promise<ChatSession[]> => {
         sessionId: msg.sessionId,
         userName: msg.senderRole === 'user' ? msg.senderName : 'Visitor',
         userEmail: msg.senderEmail || '',
-        lastMessage: msg.message,
+        lastMessage: msg.message || (msg.attachmentUrl ? '📎 Sent an attachment' : ''),
         lastMessageTime: msg.timestamp,
         unreadForAdmin: 0,
         unreadForUser: 0,
@@ -183,7 +231,7 @@ export const getAllChatSessions = async (): Promise<ChatSession[]> => {
       session.userEmail = msg.senderEmail;
     }
 
-    session.lastMessage = msg.message;
+    session.lastMessage = msg.message || (msg.attachmentUrl ? '📎 Sent an attachment' : '');
     session.lastMessageTime = msg.timestamp;
 
     if (!msg.read) {
@@ -206,7 +254,9 @@ export const sendChatMessage = async (
   messageText: string,
   senderRole: 'user' | 'admin',
   senderName: string,
-  senderEmail?: string
+  senderEmail?: string,
+  attachmentUrl?: string,
+  attachmentType?: 'image' | 'file'
 ): Promise<ChatMessage> => {
   const newMsg: ChatMessage = {
     id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -215,6 +265,8 @@ export const sendChatMessage = async (
     senderName,
     senderEmail,
     message: messageText.trim(),
+    attachmentUrl,
+    attachmentType,
     timestamp: new Date().toISOString(),
     read: false,
   };
@@ -238,6 +290,8 @@ export const sendChatMessage = async (
       sender_name: newMsg.senderName,
       sender_email: newMsg.senderEmail,
       message: newMsg.message,
+      attachment_url: newMsg.attachmentUrl,
+      attachment_type: newMsg.attachmentType,
       read: newMsg.read,
       created_at: newMsg.timestamp,
     }]);
