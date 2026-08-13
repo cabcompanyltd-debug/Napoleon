@@ -204,7 +204,7 @@ export const InstallPrompt: React.FC = () => {
 
       {/* FLOATING BOTTOM BANNER (Shows on site land, easily dismissable) */}
       {!isDismissed && !storeModal && (
-        <div className="fixed bottom-6 left-4 sm:left-6 z-40 max-w-sm w-[calc(100%-2rem)] sm:w-88 animate-in fade-in slide-in-from-bottom-5 duration-300 font-sans pointer-events-auto">
+        <div className="fixed bottom-22 left-4 sm:left-6 z-40 max-w-sm w-[calc(100%-2rem)] sm:w-88 animate-in fade-in slide-in-from-bottom-5 duration-300 font-sans pointer-events-auto">
           <div className="bg-[#04140C]/95 backdrop-blur-xl border border-[#A3E635]/60 text-white rounded-2xl p-4.5 shadow-2xl relative overflow-hidden ring-1 ring-white/10">
             {/* Glow backdrop effect */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#A3E635]/10 rounded-full blur-2xl pointer-events-none" />
