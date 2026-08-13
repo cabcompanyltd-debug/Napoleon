@@ -35,28 +35,48 @@ export const InstallPrompt: React.FC = () => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      (window as any).deferredPwaPrompt = e;
+    };
+
+    const handleExternalTrigger = () => {
+      setIsDismissed(false);
+      setShowGuide(true);
+      const promptObj = deferredPrompt || (window as any).deferredPwaPrompt;
+      if (promptObj) {
+        promptObj.prompt();
+        promptObj.userChoice.then((choiceResult: any) => {
+          if (choiceResult.outcome === 'accepted') {
+            setIsInstalled(true);
+          }
+        });
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('trigger-pwa-install', handleExternalTrigger);
 
     window.addEventListener('appinstalled', () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      (window as any).deferredPwaPrompt = null;
     });
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('trigger-pwa-install', handleExternalTrigger);
     };
-  }, []);
+  }, [deferredPrompt]);
 
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
+    const promptObj = deferredPrompt || (window as any).deferredPwaPrompt;
+    if (promptObj) {
+      promptObj.prompt();
+      const choiceResult = await promptObj.userChoice;
       if (choiceResult.outcome === 'accepted') {
         setIsInstalled(true);
       }
       setDeferredPrompt(null);
+      (window as any).deferredPwaPrompt = null;
     } else {
       setShowGuide(!showGuide);
     }
@@ -79,13 +99,13 @@ export const InstallPrompt: React.FC = () => {
             <div className="w-12 h-12 rounded-2xl overflow-hidden border border-[#A3E635]/40 bg-[#0B2B1B] p-1 shrink-0 shadow-lg">
               <img
                 src={PWA_LOGO_URL}
-                alt="Napoleon Ag PWA Logo"
+                alt="NS LTD App Logo"
                 className="w-full h-full object-contain rounded-xl"
               />
             </div>
             <div>
               <h4 className="font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
-                Napoleon Ag App
+                NS LTD Official App
                 <Sparkles className="w-3.5 h-3.5 text-[#A3E635]" />
               </h4>
               <p className="text-[11px] text-emerald-200/80 mt-0.5 leading-snug">
@@ -96,7 +116,7 @@ export const InstallPrompt: React.FC = () => {
 
           <button
             onClick={handleDismiss}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-emerald-400 hover:text-white transition-colors shrink-0"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-emerald-400 hover:text-white transition-colors shrink-0 cursor-pointer"
             aria-label="Close install prompt"
           >
             <X className="w-4 h-4" />
@@ -110,12 +130,12 @@ export const InstallPrompt: React.FC = () => {
             className="flex-1 py-2.5 px-3.5 rounded-xl bg-[#1E5E3A] hover:bg-[#287A4B] text-[#A3E635] font-bold text-xs border border-[#A3E635]/40 transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 cursor-pointer"
           >
             <Download className="w-4 h-4" />
-            <span>{deferredPrompt ? 'Install App' : 'How To Install'}</span>
+            <span>{deferredPrompt || (window as any).deferredPwaPrompt ? 'Install App' : 'How To Install'}</span>
           </button>
 
           <button
             onClick={handleDismiss}
-            className="py-2.5 px-3 rounded-xl bg-black/40 hover:bg-black/60 text-emerald-300 font-medium text-xs border border-white/10 transition-colors"
+            className="py-2.5 px-3 rounded-xl bg-black/40 hover:bg-black/60 text-emerald-300 font-medium text-xs border border-white/10 transition-colors cursor-pointer"
           >
             Dismiss
           </button>
@@ -149,8 +169,8 @@ export const InstallPrompt: React.FC = () => {
                   <span>Android & Desktop Install Steps:</span>
                 </p>
                 <ol className="list-decimal pl-4 space-y-1 text-emerald-200">
-                  <li>Open your browser menu (3 dots <strong className="text-white font-mono">⋮</strong> or address bar icon).</li>
-                  <li>Click <strong className="text-white">"Install Napoleon Ag"</strong> or <strong className="text-white">"Add to Home Screen"</strong>.</li>
+                  <li>Open browser menu (3 dots <strong className="text-white font-mono">⋮</strong> or install icon in address bar).</li>
+                  <li>Click <strong className="text-white">"Install NS LTD"</strong> or <strong className="text-white">"Add to Home Screen"</strong>.</li>
                 </ol>
               </>
             )}

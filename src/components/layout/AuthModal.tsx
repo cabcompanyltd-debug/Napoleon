@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, UserCheck, ShieldAlert, LayoutDashboard, Shield, LogIn, Sparkles, LogOut, Lock, Mail, User as UserIcon, CheckCircle2, AlertCircle } from 'lucide-react';
-import { UserProfile, mockLoginAsAdmin, mockLoginAsUser, logoutUser, signInWithInsForge, signUpWithInsForge } from '../../lib/insforge';
+import { X, ShieldAlert, LayoutDashboard, LogIn, LogOut, Lock, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
+import { UserProfile, mockLoginAsAdmin, logoutUser, signInWithInsForge } from '../../lib/insforge';
 import { BrandLogo } from './BrandLogo';
 
 interface AuthModalProps {
@@ -12,10 +12,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUser, onNavigate }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'user'>('admin');
   const [emailInput, setEmailInput] = useState('');
-  const [nameInput, setNameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -27,24 +24,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
     setIsLoading(true);
     setAuthError(null);
     setTimeout(() => {
-      const admin = mockLoginAsAdmin();
+      mockLoginAsAdmin();
       setIsLoading(false);
       onClose();
       if (onNavigate) {
         onNavigate('/dashboard');
-      }
-    }, 300);
-  };
-
-  const handleQuickUserLogin = () => {
-    setIsLoading(true);
-    setAuthError(null);
-    setTimeout(() => {
-      mockLoginAsUser();
-      setIsLoading(false);
-      onClose();
-      if (onNavigate) {
-        onNavigate('/');
       }
     }, 300);
   };
@@ -61,38 +45,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
     setAuthSuccess(null);
 
     try {
-      if (isSignUp) {
-        const res = await signUpWithInsForge(emailInput, passwordInput, nameInput, selectedRole);
-        if (res.error) {
-          setAuthError(res.error);
-        } else {
-          setAuthSuccess(res.message || 'Account created successfully!');
-          setTimeout(() => {
-            setIsLoading(false);
-            onClose();
-            if (res.user?.role === 'admin' && onNavigate) {
-              onNavigate('/dashboard');
-            } else if (onNavigate) {
-              onNavigate('/');
-            }
-          }, 600);
-        }
+      // Always authenticate as 'admin' role
+      const res = await signInWithInsForge(emailInput, passwordInput, 'admin');
+      if (res.error) {
+        setAuthError(res.error);
       } else {
-        const res = await signInWithInsForge(emailInput, passwordInput, selectedRole);
-        if (res.error) {
-          setAuthError(res.error);
-        } else {
-          setAuthSuccess('Signed in successfully!');
-          setTimeout(() => {
-            setIsLoading(false);
-            onClose();
-            if (res.user?.role === 'admin' && onNavigate) {
-              onNavigate('/dashboard');
-            } else if (onNavigate) {
-              onNavigate('/');
-            }
-          }, 600);
-        }
+        setAuthSuccess('Admin signed in successfully!');
+        setTimeout(() => {
+          setIsLoading(false);
+          onClose();
+          if (onNavigate) {
+            onNavigate('/dashboard');
+          }
+        }, 600);
       }
     } catch (err: any) {
       setAuthError(err.message || 'Authentication error. Please try again.');
@@ -121,24 +86,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white/80 hover:bg-white/20 hover:text-white transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white/80 hover:bg-white/20 hover:text-white transition-colors cursor-pointer"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
 
-          {/* Logo & Title */}
+          {/* Logo & Title Header */}
           <div className="flex flex-col items-center text-center">
             <div className="mb-3 inline-flex items-center justify-center">
               <BrandLogo size="md" />
             </div>
 
             <h3 className="font-editorial text-2xl font-bold text-white">
-              {currentUser ? 'Napoleon Steadings Account' : isSignUp ? 'Create InsForge Account' : 'InsForge Sign In & Portal'}
+              InsForge Sign In & Portal
             </h3>
-            <p className="text-xs text-emerald-200/80 mt-1 max-w-xs">
-              {currentUser
-                ? `Logged in as ${currentUser.fullName} (${currentUser.role.toUpperCase()})`
-                : 'Access the executive dashboard, publish articles & manage agricultural inquiries.'}
+            <p className="text-xs text-emerald-200/80 mt-1 max-w-xs leading-relaxed">
+              Access the executive dashboard, publish articles & manage agricultural inquiries.
             </p>
           </div>
 
@@ -147,35 +111,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
             <div className="mt-6 space-y-4 text-center">
               <div className="p-4 rounded-2xl bg-[#0F3520] border border-[#1E5E3A] space-y-2">
                 <div className="w-14 h-14 rounded-full bg-[#1E5E3A] border-2 border-[#A3E635] flex items-center justify-center text-[#A3E635] font-bold text-xl mx-auto shadow-inner">
-                  {currentUser.fullName.charAt(0).toUpperCase()}
+                  {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'A'}
                 </div>
                 <div>
-                  <h4 className="font-bold text-base text-white">{currentUser.fullName}</h4>
+                  <h4 className="font-bold text-base text-white">{currentUser.fullName || 'Administrator'}</h4>
                   <p className="text-xs text-emerald-300 font-mono">{currentUser.email}</p>
                 </div>
                 <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-[#A3E635] bg-[#1E5E3A]/80 px-3 py-1 rounded-full border border-[#A3E635]/30">
-                  {currentUser.role === 'admin' ? <ShieldAlert className="w-3.5 h-3.5 text-amber-300" /> : <UserCheck className="w-3.5 h-3.5" />}
-                  <span>{currentUser.role === 'admin' ? 'Administrator Privilege' : 'Standard Member'}</span>
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Administrator Privilege</span>
                 </div>
               </div>
 
               <div className="space-y-2 pt-2">
-                {currentUser.role === 'admin' && (
-                  <button
-                    onClick={() => {
-                      onClose();
-                      if (onNavigate) onNavigate('/dashboard');
-                    }}
-                    className="w-full py-3.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl transition-all"
-                  >
-                    <LayoutDashboard className="w-4 h-4" />
-                    <span>Go to Executive Dashboard</span>
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onNavigate) onNavigate('/dashboard');
+                  }}
+                  className="w-full py-3.5 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl transition-all cursor-pointer"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Go to Executive Dashboard</span>
+                </button>
 
                 <button
                   onClick={handleSignOut}
-                  className="w-full py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Sign Out</span>
@@ -183,43 +145,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
               </div>
             </div>
           ) : (
-            /* Sign In Options */
+            /* Admin Sign In Form View */
             <div className="mt-6 space-y-4">
-              {/* Quick One-Click Login Options */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-emerald-200/80 block text-center">
-                  ⚡ Fast One-Click Access
-                </label>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={handleQuickAdminLogin}
-                    disabled={isLoading}
-                    className="p-3 rounded-2xl bg-gradient-to-br from-[#A3E635] to-[#84CC16] hover:from-[#84CC16] hover:to-[#65A30D] text-[#0B2B1B] font-extrabold text-xs flex flex-col items-center justify-center gap-1 shadow-lg border border-white/40 transition-all hover:scale-[1.02]"
-                  >
-                    <ShieldAlert className="w-4 h-4 text-[#0B2B1B]" />
-                    <span className="text-xs">Login as Admin</span>
-                    <span className="text-[9px] opacity-80 font-mono">Full Executive Access</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleQuickUserLogin}
-                    disabled={isLoading}
-                    className="p-3 rounded-2xl bg-[#1E5E3A] hover:bg-[#184B2E] text-white font-extrabold text-xs flex flex-col items-center justify-center gap-1 shadow-lg border border-[#A3E635]/40 transition-all hover:scale-[1.02]"
-                  >
-                    <UserCheck className="w-4 h-4 text-[#A3E635]" />
-                    <span className="text-xs">Login as Member</span>
-                    <span className="text-[9px] text-emerald-200/80 font-mono">Standard Member</span>
-                  </button>
-                </div>
+              <div className="text-center">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-[#A3E635] flex items-center justify-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 text-[#A3E635]" />
+                  <span>Admin Sign In</span>
+                </h4>
               </div>
 
-              <div className="relative flex items-center justify-center my-3">
+              {/* Fast One-Click Admin Access */}
+              <button
+                type="button"
+                onClick={handleQuickAdminLogin}
+                disabled={isLoading}
+                className="w-full p-3 rounded-2xl bg-gradient-to-r from-[#A3E635] to-[#84CC16] hover:from-[#84CC16] hover:to-[#65A30D] text-[#0B2B1B] font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg border border-white/40 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                <ShieldAlert className="w-4 h-4 text-[#0B2B1B]" />
+                <span>⚡ Fast Admin Access</span>
+              </button>
+
+              <div className="relative flex items-center justify-center my-2">
                 <div className="border-t border-[#1E5E3A] w-full"></div>
                 <span className="bg-[#091D12] px-3 text-[10px] uppercase font-bold text-emerald-300/60 tracking-wider absolute">
-                  or email & password
+                  or enter credentials
                 </span>
               </div>
 
@@ -237,82 +186,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
                 </div>
               )}
 
-              {/* Form Mode */}
+              {/* Admin Sign In Form */}
               <form onSubmit={handleFormSubmit} className="space-y-3">
-                {/* Role & Mode Switch */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="grid grid-cols-2 gap-1 bg-black/40 p-1 rounded-xl border border-[#1E5E3A] w-full">
-                    <button
-                      type="button"
-                      onClick={() => setIsSignUp(false)}
-                      className={`py-1 px-3 rounded-lg text-xs font-bold transition-all ${
-                        !isSignUp ? 'bg-[#A3E635] text-[#0B2B1B]' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Sign In
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsSignUp(true)}
-                      className={`py-1 px-3 rounded-lg text-xs font-bold transition-all ${
-                        isSignUp ? 'bg-[#A3E635] text-[#0B2B1B]' : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Register
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 bg-black/40 p-1 rounded-xl border border-[#1E5E3A]">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole('admin')}
-                    className={`py-1 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                      selectedRole === 'admin'
-                        ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/30'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <Shield className="w-3.5 h-3.5" />
-                    <span>Admin</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole('user')}
-                    className={`py-1 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                      selectedRole === 'user'
-                        ? 'bg-[#1E5E3A] text-[#A3E635] border border-[#A3E635]/30'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <UserIcon className="w-3.5 h-3.5" />
-                    <span>Member</span>
-                  </button>
-                </div>
-
-                {isSignUp && (
-                  <div>
-                    <div className="relative">
-                      <UserIcon className="w-4 h-4 text-emerald-400 absolute left-3 top-3" />
-                      <input
-                        type="text"
-                        placeholder="Full Name"
-                        required={isSignUp}
-                        value={nameInput}
-                        onChange={(e) => setNameInput(e.target.value)}
-                        className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
-                      />
-                    </div>
-                  </div>
-                )}
-
                 <div>
+                  <label className="block text-[11px] font-bold text-emerald-200/90 mb-1">
+                    Email
+                  </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-emerald-400 absolute left-3 top-3" />
                     <input
                       type="email"
                       required
-                      placeholder={selectedRole === 'admin' ? 'admin@napoleonsteadings.com' : 'user@napoleonsteadings.com'}
+                      placeholder="admin@napoleonsteadings.com"
                       value={emailInput}
                       onChange={(e) => setEmailInput(e.target.value)}
                       className="w-full bg-black/50 border border-[#1E5E3A] focus:border-[#A3E635] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
@@ -321,6 +206,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
                 </div>
 
                 <div>
+                  <label className="block text-[11px] font-bold text-emerald-200/90 mb-1">
+                    Password
+                  </label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-emerald-400 absolute left-3 top-3" />
                     <input
@@ -337,16 +225,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 rounded-xl bg-[#A3E635] hover:bg-[#84CC16] text-[#0B2B1B] font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-colors"
+                  className="w-full py-3 rounded-xl bg-[#1E5E3A] hover:bg-[#287A4B] text-[#A3E635] border border-[#A3E635]/40 font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-all hover:scale-[1.01] active:scale-95 cursor-pointer disabled:opacity-50"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>{isLoading ? 'Processing...' : isSignUp ? 'Create InsForge Account' : 'Sign In via InsForge'}</span>
+                  <span>{isLoading ? 'Authenticating...' : 'Sign In'}</span>
                 </button>
               </form>
-
-              <div className="p-2.5 rounded-xl bg-black/40 border border-[#1E5E3A] text-[10px] text-emerald-100/80 leading-relaxed text-center">
-                <span className="font-bold text-[#A3E635]">InsForge BaaS Integration:</span> Connected to Postgres backend (`https://82qu5ey7.us-east.insforge.app`).
-              </div>
             </div>
           )}
         </motion.div>
@@ -354,4 +238,3 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentUs
     </AnimatePresence>
   );
 };
-
