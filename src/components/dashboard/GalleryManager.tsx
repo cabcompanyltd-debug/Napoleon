@@ -93,6 +93,34 @@ export const GalleryManager: React.FC = () => {
     }
   };
 
+  const [fetchingYoutubeInfo, setFetchingYoutubeInfo] = useState(false);
+
+  // Auto-fetch YouTube video title & details using public oEmbed API
+  const fetchYoutubeMetadata = async (vidId: string) => {
+    if (!vidId) return;
+    setFetchingYoutubeInfo(true);
+    try {
+      const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${vidId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.title) {
+          setTitle(data.title);
+          if (data.author_name) {
+            setDescription(`YouTube video features by ${data.author_name}`);
+          }
+          setStatusMsg({
+            type: 'success',
+            text: `Auto-fetched YouTube title: "${data.title}"`,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to auto-fetch YouTube metadata:', err);
+    } finally {
+      setFetchingYoutubeInfo(false);
+    }
+  };
+
   // Auto detect YouTube video ID when user types/pastes URL
   const handleYoutubeUrlChange = (url: string) => {
     setYoutubeUrl(url);
@@ -102,6 +130,9 @@ export const GalleryManager: React.FC = () => {
       setUploadError('Invalid YouTube URL format. Expected watch?v=, youtu.be/, or shorts/');
     } else {
       setUploadError(null);
+      if (id && (!title || title.trim() === '')) {
+        fetchYoutubeMetadata(id);
+      }
     }
   };
 
@@ -440,14 +471,31 @@ export const GalleryManager: React.FC = () => {
                 YouTube Video URL
               </label>
 
-              <input
-                type="url"
-                value={youtubeUrl}
-                onChange={(e) => handleYoutubeUrlChange(e.target.value)}
-                placeholder="Paste YouTube link (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)"
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#A3E635]"
-                required
-              />
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <input
+                  type="url"
+                  value={youtubeUrl}
+                  onChange={(e) => handleYoutubeUrlChange(e.target.value)}
+                  placeholder="Paste YouTube link (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#A3E635]"
+                  required
+                />
+                {youtubeVideoId && (
+                  <button
+                    type="button"
+                    onClick={() => fetchYoutubeMetadata(youtubeVideoId)}
+                    disabled={fetchingYoutubeInfo}
+                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-[#1E5E3A] hover:bg-[#287A4B] text-[#A3E635] font-bold text-xs border border-[#A3E635]/30 cursor-pointer transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+                  >
+                    {fetchingYoutubeInfo ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    <span>{fetchingYoutubeInfo ? 'Fetching...' : 'Auto-Fill Info'}</span>
+                  </button>
+                )}
+              </div>
 
               {youtubeVideoId && (
                 <div className="space-y-3">

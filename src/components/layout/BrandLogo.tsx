@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 
-export const DRIVE_FILE_ID = '1LiGSBoFUf9wX4yZ6FAjlQT-Y8UXiu5y6';
-export const GOOGLE_DRIVE_LOGO_URL = `https://drive.google.com/uc?export=view&id=${DRIVE_FILE_ID}`;
-export const GOOGLE_DRIVE_LH3_URL = `https://lh3.googleusercontent.com/d/${DRIVE_FILE_ID}`;
+export const LOGO_DRIVE_ID = '1lZWOujri5qIT5UPkCdmitM0SXfve9DQ1';
+export const FAVICON_DRIVE_ID = '1LiGSBoFUf9wX4yZ6FAjlQT-Y8UXiu5y6';
+
+export const GOOGLE_DRIVE_LOGO_URL = `https://drive.google.com/uc?export=view&id=${LOGO_DRIVE_ID}`;
+export const GOOGLE_DRIVE_LH3_LOGO_URL = `https://lh3.googleusercontent.com/d/${LOGO_DRIVE_ID}`;
+
+export const GOOGLE_DRIVE_FAVICON_URL = `https://lh3.googleusercontent.com/d/${FAVICON_DRIVE_ID}`;
 
 export const LOGO_URL = GOOGLE_DRIVE_LOGO_URL;
-export const FAVICON_URL = GOOGLE_DRIVE_LH3_URL;
+export const FAVICON_URL = GOOGLE_DRIVE_FAVICON_URL;
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -50,8 +54,8 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       <img
         src={imgSrc}
         onError={() => {
-          if (imgSrc !== GOOGLE_DRIVE_LH3_URL) {
-            setImgSrc(GOOGLE_DRIVE_LH3_URL);
+          if (imgSrc !== GOOGLE_DRIVE_LH3_LOGO_URL) {
+            setImgSrc(GOOGLE_DRIVE_LH3_LOGO_URL);
           }
         }}
         alt="Napoleon Steadings Ltd."
